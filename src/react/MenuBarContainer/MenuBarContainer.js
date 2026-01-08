@@ -1,6 +1,6 @@
 import Slider from 'react-rangeslider';
 import React, { useState, useRef, useEffect } from 'react';
-import {Pause, Play, Volume2, VolumeX, Speaker, Loader, Music, FastForward, ChevronDown, Disc} from 'react-feather';
+import {Pause, Play, Volume2, VolumeX, Speaker, Loader, Music, FastForward, ChevronDown} from 'react-feather';
 import 'react-rangeslider/lib/index.css';
 import './MenuBarContainer.css';
 

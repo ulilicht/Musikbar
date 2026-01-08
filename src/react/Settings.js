@@ -26,7 +26,7 @@ const Settings = () => {
             musicAssistantUrl: serverUrl,
             musicAssistantToken: token,
             favouritesSource: favouritesSource,
-            favouritesSource: favouritesSource,
+
             autostart: autostart,
             shownShortcuts: shownShortcuts
         });
