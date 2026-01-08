@@ -194,10 +194,10 @@ class App extends React.Component {
         const metadata = this.extractMetadata(player, queue);
         // console.log('[App] Loaded metadata for', zoneObj.name, metadata);
         
-        // Determine playing state: use player.state for plugins, queue.state for normal MA playback
-        const isPlaying = isPluginActive 
-            ? player.state === 'playing' 
-            : (queue ? queue.state === 'playing' : player.state === 'playing');
+        // Determine playing state: always use player.state as the source of truth
+        // The player_updated event is sent when play/pause commands are executed,
+        // while queue_updated events are for queue-specific changes (e.g., track changes)
+        const isPlaying = player.state === 'playing';
 
         this.setState({
             nowPlaying: {
