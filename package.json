@@ -12,7 +12,7 @@
   },
   "dependencies": {
     "debug": "^4.4.3",
-    "electron-store": "8.2.0",
+    "electron-store": "11.0.2",
     "menubar": "^9.5.2",
     "new-github-issue-url": "^1.1.0"
   },
