@@ -257,30 +257,19 @@ class App extends React.Component {
 
     loadFavourites() { // Renamed from loadRecentlyPlayed to be more generic, though logic inside needs update
         const source = this.state.config?.favouritesSource || 'recents';
-        // 'recents' | 'radio' | 'favorites_playlist' | 'random_artist'
-
+        
+        // Map settings values to recommendation category IDs
+        const categoryMap = {
+            'recents': 'recently_played',
+            'radio': 'favorite_radio',
+            'favorites_playlist': 'favorite_playlists',
+            'random_artist': 'random_artists'
+        };
+        
+        const categoryId = categoryMap[source] || 'recently_played';
         const limit = 20;
 
-        let promise;
-        switch (source) {
-            case 'radio':
-                promise = this.musicAssistant.getRadios(limit);
-                break;
-            case 'favorites_playlist':
-                // Not fully implemented on client yet, assume getPlaylists
-                promise = this.musicAssistant.getPlaylists(limit);
-                break;
-            case 'random_artist':
-                 // Not fully implemented on client yet
-                 promise = this.musicAssistant.getArtists(limit);
-                 break;
-            case 'recents':
-            default:
-                promise = this.musicAssistant.getRecentlyPlayed(limit);
-                break;
-        }
-
-        promise.then(items => {
+        this.musicAssistant.getRecommendationsByCategory(categoryId, limit).then(items => {
              // Map to favorites format: { name, image, id, class }
              // MA items have different image locations:
              // - Recently played: item.image (string or { path, ... })
