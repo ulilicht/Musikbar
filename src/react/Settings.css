@@ -1,0 +1,157 @@
+/* Settings.css */
+/* Scoped to avoid bleeding into main app */
+.settings-container {
+    padding: 30px 40px 60px 40px;
+    height: 100vh;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    
+    -webkit-user-select: none;
+    user-select: none;
+    cursor: default;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: black; /* Main App uses black text */
+    background-color: #f2f2f2;
+}
+
+.settings-container h1 {
+    display: none; /* Mac settings don't have a giant H1 inside the view usually, clean it up */
+}
+
+.settings-container .settings-section {
+    margin-bottom: 25px;
+}
+
+.settings-container h2 {
+    font-size: 11px;
+    font-weight: bold;
+    text-transform: uppercase;
+    color: rgba(0, 0, 0, 0.5); /* Darker label color */
+    margin-bottom: 8px;
+    margin-left: 10px; /* Indent slightly to align with group */
+    letter-spacing: 0.2px;
+}
+
+/* The Card/Group Container */
+.settings-container .settings-group {
+    background-color: white; /* Solid background */
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid rgba(0, 0, 0, 0.1); 
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05); 
+}
+
+/* Each Row */
+.settings-container .form-group {
+    display: flex;
+    flex-direction: row; /* Horizontal layout */
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 15px;
+    margin-bottom: 0; /* Remove old margin */
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1); /* Divider */
+}
+
+.settings-container .form-group:last-child {
+    border-bottom: none;
+}
+
+.settings-container label {
+    font-size: 13px;
+    margin-bottom: 0;
+    font-weight: 400;
+    color: black; 
+    flex: 1;
+}
+
+/* Inputs on the right */
+.settings-container input[type="text"],
+.settings-container input[type="password"],
+.settings-container select {
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    padding: 4px 0;
+    color: rgba(0, 0, 0, 0.7); /* Dark text for inputs */
+    font-size: 13px;
+    outline: none;
+    text-align: right; /* Right align value like native Mac */
+    width: 200px;
+    transition: color 0.2s;
+}
+
+.settings-container input[type="checkbox"] {
+    margin: 0;
+    /* Basic customization if needed, but native look is fine for now. 
+       Just make sure it aligns right */
+    width: auto;
+}
+
+.settings-container input:focus,
+.settings-container select:focus {
+    color: black;
+    /* No border or bg change on focus for cleaner look, purely textual edit */
+}
+
+.settings-container input::placeholder {
+    color: rgba(0, 0, 0, 0.4);
+}
+
+
+.settings-container .description {
+    font-size: 11px;
+    color: rgba(0, 0, 0, 0.5);
+    line-height: 1.4;
+    margin-top: 8px;
+    margin-left: 10px;
+    max-width: 90%;
+}
+
+.settings-container .description a {
+    color: #007aff;
+    text-decoration: none;
+    display: inline;
+}
+
+.settings-container .description a:hover {
+    text-decoration: underline;
+}
+
+.settings-container .settings-actions {
+    margin-top: auto;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    padding-top: 20px;
+    /* border-top: 1px solid rgba(255, 255, 255, 0.1); */ /* Cleaner without line */
+}
+
+.settings-container .primary-button {
+    background-color: #007aff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    padding: 3px 12px;
+    min-width: 70px;
+    font-size: 13px;
+    font-weight: 400;
+    cursor: default;
+    box-shadow: none;
+}
+
+.settings-container .primary-button:hover {
+    background-color: #006ae6;
+}
+
+.settings-container .primary-button:active {
+    background-color: #0056bd;
+}
+
+.settings-container .status-message {
+    margin-right: 15px;
+    font-size: 11px;
+    color: #4cd964;
+    opacity: 0.9;
+}

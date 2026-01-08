@@ -1,0 +1,351 @@
+/* card-wrapper and rounded moved to App.css */
+
+
+/** CURRENTLY PLAYING **/
+
+.currently-playing {
+    display: flex;
+    padding: 10px;
+}
+
+.currently-playing-image {
+    display: flex;
+    align-items: center;
+}
+
+@keyframes rotating {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.currently-playing-loading {
+    animation: rotating 2s linear infinite;
+}
+
+.currently-playing-image img {
+    width: 80px;
+    height: 80px;
+    border-radius: 5px;
+    object-fit: cover;
+}
+
+.currently-playing-placeholder,
+.currently-playing-image-error {
+    width: 70px;
+    height: 70px;
+    border-radius: 5px;
+    background: rgba(0, 0, 0, 0.08);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 9px;
+}
+
+.currently-playing-content {
+    padding: 0 25px;
+    display: flex;
+    align-items: center;
+    flex-grow: 1;
+    color: black;
+}
+
+.currently-playing-content h4 {
+    padding-bottom: 5px;
+}
+
+.currently-playing-content p {
+    opacity: 0.5;
+}
+
+.currently-playing-controls {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+}
+
+.currently-playing-controls button {
+    background-color: transparent;
+}
+
+.currently-playing-controls button svg {
+    fill: rgba(0, 0, 0, 0.7);
+    width: 20px;
+}
+
+.currently-playing-controls-next {
+    margin-left: 5px;
+}
+
+
+/** VOLUME SLIDER **/
+
+.volume-slider {
+    padding: 6px 10px;
+    color: black;
+}
+
+.volume-slider-inner {
+    display: -webkit-box;
+    display: flex;
+    padding: 0 0;
+    border: 0 solid rgba(0, 0, 0, 0.05);
+
+}
+
+.volume-slider-inner .icon {
+    background-color: #fff;
+    height: 26px;
+    padding-top: 1px;
+    border-radius: 50px 0 0 50px;
+    color: rgba(0, 0, 0, 0.5);
+}
+
+.volume-slider-inner svg {
+    width: 15px;
+}
+
+.volume-slider-inner input {
+    width: 100%;
+}
+
+.volume-slider-range {
+    width: 100%;
+    height: 26px;
+    padding: 0;
+    margin: 0;
+}
+
+.volume-slider-range .rangeslider {
+    padding: 0;
+    margin: 0;
+    height: 26px;
+    background-color: rgba(0, 0, 0, 0.05);
+    border-radius: 0 50px 50px 0;
+    box-shadow: none;
+}
+
+.volume-slider-range .rangeslider .rangeslider__fill {
+    background-color: #fff;
+    box-shadow: none;
+    border-radius: 0;
+}
+
+.volume-slider-range .rangeslider .rangeslider__handle {
+    background-color: #fff;
+    color: #fff;
+    box-shadow: -5px 0 10px 0 rgba(0, 0, 0, 0.05);
+    border: none;
+    outline: none;
+}
+
+.volume-slider-range .rangeslider .rangeslider__handle::after {
+    display: none;
+}
+
+.volume-slider-range .rangeslider__handle {
+    width: 26px;
+    height: 26px;
+    border-radius: 30px;
+    top: 50%;
+    transform: translate3d(-50%, -50%, 0);
+}
+
+/** ZONE SELECTOR **/
+.zone-selector {
+    color: black;
+}
+
+.zone {
+    display: flex;
+    align-items: center;
+    padding: 3px;
+
+}
+
+.zone:hover {
+    background-color: rgba(0, 0, 0, 0.08);
+    border-radius: 5px;
+}
+
+.zone-name {
+    font-size: 13px;
+    margin-left: 9px;
+    flex-grow: 1;
+}
+
+.zone-isPlaying {
+    flex-grow: 0;
+    height: 16px;
+}
+
+.zone-isPlaying svg {
+    height: 16px;
+    color: rgba(0, 0, 0, 0.4);
+}
+
+
+/** FAVOURITES **/
+
+.favourites {
+    display: flex;
+    flex-wrap: wrap;
+}
+
+.favourite {
+    margin: 5px;
+    cursor: pointer;
+}
+
+.favourite:active {
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
+}
+
+.favourite-image {
+    width: 50px;
+    height: 50px;
+    border-radius: 4px;
+    object-fit: cover;
+    background: rgba(0, 0, 0, 0.05);
+}
+
+
+/** COMMON **/
+
+.volume-slider-headline,
+.zone-headline,
+.favourites-headline {
+    font-weight: 600;
+    font-size: 12px;
+    line-height: 14px;
+    margin-bottom: 8px;
+    margin-top: 8px;
+}
+
+/* Favourites Dropdown */
+.favourites-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.favourites-headline-wrapper {
+    position: relative;
+}
+
+.favourites-hover-title {
+    font-size: 11px;
+    color: rgba(0, 0, 0, 0.5);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 200px;
+}
+
+.favourites-headline-clickable {
+    display: inline-flex;
+    align-items: center;
+    cursor: pointer;
+    padding: 2px 4px;
+    margin: -2px -4px;
+    border-radius: 4px;
+    transition: background-color 0.15s ease;
+}
+
+.favourites-headline-clickable:hover {
+    background-color: rgba(0, 0, 0, 0.06);
+}
+
+.favourites-dropdown-arrow {
+    width: 12px;
+    height: 12px;
+    margin-left: 2px;
+    opacity: 0.5;
+    transition: transform 0.2s ease, opacity 0.15s ease;
+}
+
+.favourites-headline-clickable:hover .favourites-dropdown-arrow {
+    opacity: 0.8;
+}
+
+.favourites-dropdown-arrow.open {
+    transform: rotate(180deg);
+}
+
+.favourites-dropdown-menu {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    margin-top: 4px;
+    background-color: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    z-index: 100;
+    min-width: 160px;
+    padding: 4px 0;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.favourites-dropdown-item {
+    padding: 8px 12px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: background-color 0.1s ease;
+}
+
+.favourites-dropdown-item:hover {
+    background-color: rgba(0, 0, 0, 0.06);
+}
+
+.favourites-dropdown-item.active {
+    font-weight: 600;
+    color: #007aff;
+}
+
+
+.module-bg {
+    background-color: rgba(255, 255, 255, 0.4);
+    font-size: 13px;
+    margin-bottom: 10px;
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+}
+
+button {
+    background-color: rgba(0, 0, 0, 0.08);
+    border: none;
+    border-radius: 400px;
+    width: 26px;
+    height: 26px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: default;
+    outline: none;
+    transition: 0.2s;
+}
+
+button svg {
+    width: 13px;
+    color: black;
+}
+
+button.active {
+    background-color: #027aff;
+}
+
+button.active svg {
+    color: white;
+}
+
+.divider {
+    height: 1px;
+    background: rgba(0, 0, 0, 0.1);
+    margin: 4px 0;
+}
+
+/* ma-button styles moved to App.css */
