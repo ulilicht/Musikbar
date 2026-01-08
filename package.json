@@ -1,7 +1,7 @@
 {
   "name": "musikbar",
   "productName": "Musikbar",
-  "version": "2.0.1",
+  "version": "2.0.2",
   "description": "A Mac Menubar app to control Music Assistant.",
   "author": "Ulrich Lichtenegger",
   "private": true,
