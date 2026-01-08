@@ -20,4 +20,4 @@ jobs:
       - name: Upload release artifact
         uses: actions/upload-artifact@v2
         with:
-          path: out/make/Raumbar-*.dmg
+          path: out/make/Musikbar-*.dmg
