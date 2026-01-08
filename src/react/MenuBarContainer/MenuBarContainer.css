@@ -191,13 +191,16 @@
 /** FAVOURITES **/
 
 .favourites {
-    display: flex;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 10px;
+    padding: 10px 0;
 }
 
 .favourite {
-    margin: 5px;
     cursor: pointer;
+    border-radius: 4px;
+    overflow: hidden;
 }
 
 .favourite:active {
@@ -205,11 +208,12 @@
 }
 
 .favourite-image {
-    width: 50px;
-    height: 50px;
+    width: 100%;
+    aspect-ratio: 1;
     border-radius: 4px;
     object-fit: cover;
     background: rgba(0, 0, 0, 0.05);
+    display: block;
 }
 
 

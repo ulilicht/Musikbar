@@ -221,50 +221,38 @@ class MusicAssistantClient extends EventEmitter {
     });
   }
 
-  async getRecentlyPlayed(limit = 20) {
+  /**
+   * Fetch all recommendations from the unified endpoint.
+   * Returns an array of folder objects, each containing items.
+   */
+  async getRecommendations() {
     try {
-      return await this.sendCommand("music/recently_played_items", { limit });
+      return await this.sendCommand("music/recommendations");
     } catch (e) {
-      console.error("Failed to get recents", e);
+      console.error("Failed to get recommendations", e);
       return [];
     }
   }
 
-  async getRadios(limit = 20) {
-      try {
-          // Correct MA API endpoint: music/radios/library_items
-          const res = await this.sendCommand("music/radios/library_items");
-          return Array.isArray(res) ? res.slice(0, limit) : (res.items || []).slice(0, limit);
-      } catch (e) {
-          console.error("Failed to get radios", e);
-          return [];
+  /**
+   * Get items from a specific recommendation category.
+   * @param {string} categoryId - The item_id of the folder (e.g., 'recently_played', 'favorite_radio')
+   * @param {number} limit - Maximum number of items to return
+   * @returns {Promise<Array>} Array of media items
+   */
+  async getRecommendationsByCategory(categoryId, limit = 20) {
+    try {
+      const recommendations = await this.getRecommendations();
+      const folder = recommendations.find(f => f.item_id === categoryId);
+      if (!folder || !Array.isArray(folder.items)) {
+        console.warn(`Category '${categoryId}' not found in recommendations`);
+        return [];
       }
-  }
-
-  async getPlaylists(limit = 20) {
-      try {
-          // Correct MA API endpoint: music/playlists/library_items
-          const res = await this.sendCommand("music/playlists/library_items");
-          return Array.isArray(res) ? res.slice(0, limit) : (res.items || []).slice(0, limit);
-      } catch (e) {
-          console.error("Failed to get playlists", e);
-          return [];
-      }
-  }
-
-  async getArtists(limit = 20) {
-       try {
-          // Correct MA API endpoint: music/artists/library_items
-          const res = await this.sendCommand("music/artists/library_items");
-          let items = Array.isArray(res) ? res : (res.items || []);
-          
-          // Simple shuffle for random artists
-          items = items.sort(() => 0.5 - Math.random());
-          return items.slice(0, limit);
-       } catch(e) {
-           console.error("Failed to get artists", e);
-           return [];
-       }
+      return folder.items.slice(0, limit);
+    } catch (e) {
+      console.error(`Failed to get recommendations for category '${categoryId}'`, e);
+      return [];
+    }
   }
 }
 

@@ -195,6 +195,11 @@ const Favourites = (props) => {
         }
     };
 
+    // Get the label for the currently selected source
+    const selectedSourceLabel = FAVOURITES_SOURCE_OPTIONS.find(
+        option => option.value === props.favouritesSource
+    )?.label || 'Favourites';
+
     return (
         <div>
             <div className='divider'/>
@@ -204,7 +209,7 @@ const Favourites = (props) => {
                         className='favourites-headline favourites-headline-clickable'
                         onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                     >
-                        <span>Favourites</span>
+                        <span>{selectedSourceLabel}</span>
                         <ChevronDown className={`favourites-dropdown-arrow ${isDropdownOpen ? 'open' : ''}`} />
                     </div>
                     {isDropdownOpen && (
