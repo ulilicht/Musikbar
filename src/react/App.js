@@ -4,6 +4,7 @@ import MenuBarContainer from "./MenuBarContainer/MenuBarContainer";
 import ErrorBoundary from "./ErrorBoundary/ErrorBoundary";
 import Settings from './Settings';
 import MusicAssistantClient from './MusicAssistantClient';
+import { api } from './api/tauri';
 import { Settings as SettingsIcon } from 'react-feather';
 
 class App extends React.Component {
@@ -11,6 +12,7 @@ class App extends React.Component {
         super(props);
         this.musicAssistant = null; // Will init after config load
         this.didAutoSelectZoneOnFirstLaunch = false;
+        this.unlistenSettings = null;
         this.state = {
             view: 'loading', // 'loading' | 'main' | 'settings' | 'setup_required'
             isReady: false,
@@ -27,7 +29,9 @@ class App extends React.Component {
         window.addEventListener('hashchange', this.handleHashChange.bind(this));
         
         // Listen for config updates
-        window.ipcRenderer.on('settings-updated', this.loadConfig.bind(this));
+        api.onSettingsUpdated(this.loadConfig.bind(this)).then(unlisten => {
+            this.unlistenSettings = unlisten;
+        });
 
         // Initial load
         this.handleHashChange();
@@ -36,7 +40,7 @@ class App extends React.Component {
     
     componentWillUnmount() {
          window.removeEventListener('hashchange', this.handleHashChange.bind(this));
-         window.ipcRenderer.removeAllListeners('settings-updated');
+         if (this.unlistenSettings) this.unlistenSettings();
     }
 
     handleHashChange() {
@@ -53,7 +57,7 @@ class App extends React.Component {
     }
 
     async loadConfig() {
-        const settings = await window.ipcRenderer.invoke('get-settings');
+        const settings = await api.getSettings();
         this.setState({ config: settings }, () => {
             if (this.state.isReady) {
                 this.loadFavourites();
@@ -172,13 +176,7 @@ class App extends React.Component {
         
         // Map MA Player state to UI NowPlaying
         // { artist, track, image, isPlaying, isLoading, isMuted, volume, canPlayPause, canPlayNext }
-        
-        // Check if a plugin source is active (AirPlay, Spotify Connect, etc.)
-        // When a plugin is active, the queue contains stale data, use player state instead
-        const isPluginActive = player.active_source && 
-            player.active_source !== player.player_id &&
-            player.current_media?.media_type === 'plugin_source';
-        
+
         const features = player.supported_features || [];
         const canPlayPause = features.includes('pause') || features.includes('play_pause');
         let canPlayNext = features.includes('next');
@@ -360,8 +358,8 @@ class App extends React.Component {
 
     async handleFavouritesSourceChange(source) {
         // Get current settings and update only the favouritesSource
-        const currentSettings = await window.ipcRenderer.invoke('get-settings');
-        await window.ipcRenderer.invoke('save-settings', {
+        const currentSettings = await api.getSettings();
+        await api.saveSettings({
             ...currentSettings,
             favouritesSource: source
         });
@@ -385,7 +383,7 @@ class App extends React.Component {
                         <h2>Welcome to Musikbar!</h2>
                         <p>Please configure your Music Assistant connection.</p>
                         <div className="ma-button-wrapper">
-                            <button className="ma-button" onClick={() => window.ipcRenderer.send('open-settings')}>
+                            <button className="ma-button" onClick={() => api.openSettings()}>
                                 <div className="ma-button-icon">
                                     <SettingsIcon />
                                 </div>

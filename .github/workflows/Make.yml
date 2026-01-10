@@ -1,4 +1,4 @@
-name: Make
+name: Build
 
 on:
   # Allows you to run this workflow manually from the Actions tab
@@ -10,14 +10,25 @@ jobs:
 
     steps:
       - uses: actions/checkout@v6
-      - uses: actions/setup-node@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
         with:
-          node-version: "18"
-      - name: Install dependencies (npm install)
+          node-version: "22"
+
+      - name: Setup Rust
+        uses: dtolnay/rust-action@stable
+
+      - name: Install dependencies
         run: npm install --legacy-peer-deps
-      - name: Make the release (npm run make)
+
+      - name: Build the app
         run: npm run make
+
       - name: Upload release artifact
         uses: actions/upload-artifact@v4
         with:
-          path: out/make/Musikbar-*.dmg
+          name: Musikbar-macos
+          path: |
+            src-tauri/target/release/bundle/dmg/*.dmg
+            src-tauri/target/release/bundle/macos/*.app
