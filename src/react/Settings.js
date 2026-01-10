@@ -9,6 +9,7 @@ const Settings = () => {
     const [autostart, setAutostart] = useState(true);
     const [shownShortcuts, setShownShortcuts] = useState({ ma: true, spotify: true, apple: false });
     const [status, setStatus] = useState('');
+    const [appVersion, setAppVersion] = useState('');
 
     useEffect(() => {
         // Load initial settings
@@ -19,6 +20,9 @@ const Settings = () => {
             if (typeof settings.autostart !== 'undefined') setAutostart(settings.autostart);
             if (settings.shownShortcuts) setShownShortcuts(settings.shownShortcuts);
         });
+
+        // Load app version
+        api.getAppVersion().then(v => setAppVersion(v));
     }, []);
 
     const handleSave = async () => {
@@ -129,7 +133,8 @@ const Settings = () => {
             </div>
 
             <div className="settings-actions">
-                 <span className="status-message">{status}</span>
+                <div className="version-info">v{appVersion}</div>
+                <span className="status-message">{status}</span>
                 <button className="primary-button" onClick={handleSave}>Save</button>
             </div>
         </div>

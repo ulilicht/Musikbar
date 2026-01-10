@@ -1,8 +1,8 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "Musikbar",
-  "version": "2.0.2",
-  "identifier": "com.ulilicht.musikbar",
+  "version": "2.1.0",
+  "identifier": "de.ulilicht.musikbar",
   "build": {
     "frontendDist": "../build",
     "devUrl": "http://localhost:3000",
@@ -41,6 +41,23 @@
     ],
     "resources": [
       "icons/icon-template.png"
-    ]
+    ],
+    "macOS": {
+      "dmg": {
+        "background": "icons/dmg-background.png",
+        "windowSize": {
+          "width": 540,
+          "height": 380
+        },
+        "appPosition": {
+          "x": 130,
+          "y": 190
+        },
+        "applicationFolderPosition": {
+          "x": 410,
+          "y": 190
+        }
+      }
+    }
   }
 }

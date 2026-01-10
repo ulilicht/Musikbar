@@ -63,6 +63,12 @@ This will launch both the React dev server and the Tauri application.
 
 ### Building for Release
 
+Upgrade the version:
+
+```bash
+npx bumpp
+```
+
 ```bash
 npm run make
 ```

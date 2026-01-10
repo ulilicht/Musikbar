@@ -1,5 +1,5 @@
-
 import { invoke } from '@tauri-apps/api/core';
+import { getVersion } from '@tauri-apps/api/app';
 import { load } from '@tauri-apps/plugin-store';
 import { enable, disable, isEnabled } from '@tauri-apps/plugin-autostart';
 import { open } from '@tauri-apps/plugin-shell';
@@ -78,5 +78,9 @@ export const api = {
         const { listen } = await import('@tauri-apps/api/event');
         const unlisten = await listen('settings-updated', callback);
         return unlisten; 
+    },
+
+    getAppVersion: async () => {
+        return await getVersion();
     }
 };

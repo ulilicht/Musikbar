@@ -1,10 +1,11 @@
-# Project Context: Raumbar -> Music Assistant Migration
+# Project Context:
+
+Musikbar is a Mac menubar app to control Music Assistant.
 
 ## Architecture
 
-- **Frontend**: React (in Electron).
-- **Backend**: `MusicAssistantClient` (WebSocket) replaced `node-raumkernel`.
-- **Bridge**: `electron/preload.js` initializes `window.musicAssistant`.
+- **Frontend**: React (in Tauri).
+- Packaged for Mac with Tauri.
 
 ## Music Assistant API Insights
 
@@ -23,4 +24,3 @@
 
 - `src/react/MusicAssistantClient.js`: formatting, auth, WS handling.
 - `src/react/App.js`: Main UI logic. Maps `players` + `queues` using `mapPlayersToZones`.
-- `electron/preload.js`: Config entry point (Env vars: `MUSIC_ASSISTANT_URL`, `TOKEN`).
