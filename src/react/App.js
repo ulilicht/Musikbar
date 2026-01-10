@@ -332,6 +332,8 @@ class App extends React.Component {
         this.musicAssistant.sendCommand('player_queues/play_media', { 
             queue_id: zone.udn, 
             media: media
+        }).catch(e => {
+            console.error('Failed to play media', e);
         });
     }
 
