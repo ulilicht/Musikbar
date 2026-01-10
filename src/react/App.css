@@ -3,8 +3,9 @@
     font-weight: 600;
     color: black;
 }
-body {
+html, body {
     overflow-x: hidden;
+    overscroll-behavior: none;
 }
 
 .card-wrapper {
