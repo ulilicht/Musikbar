@@ -27,7 +27,14 @@
       }
     ],
     "security": {
-      "csp": null
+      "csp": {
+        "default-src": "'self'",
+        "script-src": "'self' 'unsafe-eval' 'unsafe-inline'",
+        "style-src": "'self' 'unsafe-inline'",
+        "img-src": "'self' asset: http: https: data: blob:",
+        "connect-src": "'self' ipc: tauri: ws: wss: http: https:",
+        "font-src": "'self' data:"
+      }
     }
   },
   "bundle": {
