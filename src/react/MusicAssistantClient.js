@@ -177,7 +177,7 @@ class MusicAssistantClient extends EventEmitter {
           this.pendingRequests.delete(id);
           reject(new Error(`Command ${command} timed out`));
         }
-      }, 5000);
+      }, 30000);
     });
   }
 

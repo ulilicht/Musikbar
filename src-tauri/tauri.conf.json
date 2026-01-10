@@ -1,0 +1,73 @@
+{
+  "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
+  "productName": "Musikbar",
+  "version": "2.1.0",
+  "identifier": "de.ulilicht.musikbar",
+  "build": {
+    "frontendDist": "../build",
+    "devUrl": "http://localhost:3000",
+    "beforeDevCommand": "npm run start:react",
+    "beforeBuildCommand": "npm run build"
+  },
+  "app": {
+    "withGlobalTauri": true,
+    "macOSPrivateApi": true,
+    "windows": [
+      {
+        "label": "main",
+        "title": "Musikbar",
+        "width": 400,
+        "height": 600,
+        "resizable": true,
+        "minWidth": 400,
+        "maxWidth": 400,
+        "minHeight": 600,
+        "fullscreen": false,
+        "transparent": true,
+        "decorations": false,
+        "visible": false,
+        "skipTaskbar": true
+      }
+    ],
+    "security": {
+      "csp": {
+        "default-src": "'self'",
+        "script-src": "'self' 'unsafe-eval' 'unsafe-inline'",
+        "style-src": "'self' 'unsafe-inline'",
+        "img-src": "'self' asset: http: https: data: blob:",
+        "connect-src": "'self' ipc: tauri: ws: wss: http: https:",
+        "font-src": "'self' data:"
+      }
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": [
+      "dmg",
+      "app"
+    ],
+    "icon": [
+      "icons/icon.icns"
+    ],
+    "resources": [
+      "icons/icon-template.png"
+    ],
+    "macOS": {
+      "dmg": {
+        "background": "icons/dmg-background.png",
+        "windowSize": {
+          "width": 540,
+          "height": 380
+        },
+        "appPosition": {
+          "x": 130,
+          "y": 190
+        },
+        "applicationFolderPosition": {
+          "x": 410,
+          "y": 190
+        }
+      }
+    }
+  }
+}

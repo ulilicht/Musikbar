@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import './Settings.css';
+import { api } from './api/tauri';
 
 const Settings = () => {
     const [serverUrl, setServerUrl] = useState('http://homeassistant.local:8095');
@@ -8,21 +9,25 @@ const Settings = () => {
     const [autostart, setAutostart] = useState(true);
     const [shownShortcuts, setShownShortcuts] = useState({ ma: true, spotify: true, apple: false });
     const [status, setStatus] = useState('');
+    const [appVersion, setAppVersion] = useState('');
 
     useEffect(() => {
         // Load initial settings
-        window.ipcRenderer.invoke('get-settings').then(settings => {
+        api.getSettings().then(settings => {
             if (settings.musicAssistantUrl) setServerUrl(settings.musicAssistantUrl);
             if (settings.musicAssistantToken) setToken(settings.musicAssistantToken);
             if (settings.favouritesSource) setFavouritesSource(settings.favouritesSource);
             if (typeof settings.autostart !== 'undefined') setAutostart(settings.autostart);
             if (settings.shownShortcuts) setShownShortcuts(settings.shownShortcuts);
         });
+
+        // Load app version
+        api.getAppVersion().then(v => setAppVersion(v));
     }, []);
 
     const handleSave = async () => {
         setStatus('Saving...');
-        await window.ipcRenderer.invoke('save-settings', {
+        await api.saveSettings({
             musicAssistantUrl: serverUrl,
             musicAssistantToken: token,
             favouritesSource: favouritesSource,
@@ -61,7 +66,7 @@ const Settings = () => {
                     </div>
                 </div>
                 <p className="description">
-                    A long-lived access token is required. You can obtain it from your profile page in Music Assistant. <a href="http://homeassistant.local:8095/#/settings/profile" onClick={(e) => { e.preventDefault(); window.ipcRenderer.invoke('open-external', 'http://homeassistant.local:8095/#/settings/profile'); }}>
+                    A long-lived access token is required. You can obtain it from your profile page in Music Assistant. <a href="http://homeassistant.local:8095/#/settings/profile" onClick={(e) => { e.preventDefault(); api.openExternal('http://homeassistant.local:8095/#/settings/profile'); }}>
                         Open User Profile
                     </a>
                 </p>
@@ -128,7 +133,8 @@ const Settings = () => {
             </div>
 
             <div className="settings-actions">
-                 <span className="status-message">{status}</span>
+                <div className="version-info">v{appVersion}</div>
+                <span className="status-message">{status}</span>
                 <button className="primary-button" onClick={handleSave}>Save</button>
             </div>
         </div>

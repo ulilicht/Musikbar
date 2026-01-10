@@ -1,0 +1,17 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "Default capability for the app",
+  "windows": [
+    "*"
+  ],
+  "permissions": [
+    "core:default",
+    "store:default",
+    "shell:allow-open",
+    "autostart:allow-enable",
+    "autostart:allow-disable",
+    "autostart:allow-is-enabled",
+    "positioner:default"
+  ]
+}

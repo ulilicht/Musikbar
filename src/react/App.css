@@ -3,14 +3,15 @@
     font-weight: 600;
     color: black;
 }
-body {
+html, body {
     overflow-x: hidden;
+    overscroll-behavior: none;
 }
 
 .card-wrapper {
     background-color: rgba(255, 255, 255, 0.2);
     width: 400px;
-    min-height: 500px;
+    min-height: 100vh;
     padding: 0.8rem;
     user-select: none;
     box-sizing: border-box;

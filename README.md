@@ -36,38 +36,48 @@ You can overcome both by compiling the app from source yourself using your own d
 
 ### Basics
 
-The app is created using React, Electron and connects to [Music Assistant](https://music-assistant.io/).
+The app is created using React, Tauri and connects to [Music Assistant](https://music-assistant.io/).
 
 To get started, read about the concepts in
 
 - https://github.com/facebook/create-react-app
-- https://www.electronforge.io/
+- https://v2.tauri.app
 - https://music-assistant.io/
-
-### Preparation
-
-The App needs apple codesigning to run, as it opens a Network server. If you don't add a certificate, the app will still
-run but ask for permissions to access the network on each launch.
-
-1. Create a certificate
-2. Create a copy of `./codesign.config.dist.js` as `./codesign.config.js`
-3. Add your certificate details to the new file.
-
-More information can be found in the [Electron Docs](https://www.electronjs.org/docs/tutorial/code-signing)
 
 ### Prerequisites
 
-- You need to use Node version 18. (Dependency of electron-forge)
-- If you have [nvm](https://github.com/nvm-sh/nvm) installed, run `nvm use 18` before running any commands.
+- **Rust** - Required for building Tauri
+  - Install via [rustup.rs](https://rustup.rs/)
 
-### Starting
+### Starting Development
 
-- run `npm start`
-- run `npm run start-electron` in another Terminal window.
+```bash
+# Install dependencies
+npm install
 
-### Building
+# Start the app in development mode
+npm start
+```
 
-- run `npm run make`
+This will launch both the React dev server and the Tauri application.
+
+### Building for Release
+
+Upgrade the version:
+
+```bash
+npx bumpp
+```
+
+```bash
+npm run make
+```
+
+The built application will be available in `src-tauri/target/release/bundle/`.
+
+### Code Signing (Optional)
+
+To sign the app with your own Apple Developer certificate, configure Tauri's signing options in `src-tauri/tauri.conf.json`. See the [Tauri Code Signing docs](https://v2.tauri.app/distribute/sign/macos/) for more information.
 
 ## License
 
