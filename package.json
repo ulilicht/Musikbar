@@ -51,5 +51,13 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "bumpp": {
+    "files": [
+      "package.json",
+      "package-lock.json",
+      "src-tauri/tauri.conf.json",
+      "src-tauri/Cargo.toml"
+    ]
   }
 }
