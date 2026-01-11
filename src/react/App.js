@@ -148,11 +148,30 @@ class App extends React.Component {
         }
         // Map MA Player -> UI Zone
         // UI expects: { name, udn, isZone: ?, isPlaying }
-        // We'll treat every player as a "Zone" for now.
-        return players.map(p => {
+        // Filter out players based on hide_player_in_ui settings
+        return players.filter(p => {
+             // Default hidden flags if missing (safety check)
+             const hiddenFlags = p.hide_player_in_ui || [];
+             
+             // Check if hidden because unavailable
+             if (!p.available && hiddenFlags.includes('when_unavailable')) {
+                 return false;
+             }
+             
+             // Check if hidden because synced (member of a group)
+             if (p.synced_to && hiddenFlags.includes('when_synced')) {
+                 return false;
+             }
+             
+             // Also check active group masking? 
+             // Logic in HA/MA often hides players that are part of an active group if 'when_group_active' is set
+             // But valid synced_to check above usually covers the follower case.
+             
+             return true;
+        }).map(p => {
             const queue = queues.find(q => q.queue_id === p.player_id);
             if (!queue) {
-               console.warn(`[App] No queue found for player ${p.name} (${p.player_id})`);
+               // console.warn(`[App] No queue found for player ${p.name} (${p.player_id})`);
             }
             return {
                 name: p.name,
