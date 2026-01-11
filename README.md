@@ -25,14 +25,9 @@ Musikbar allows you to control your Music Assistant players directly from your M
 2. Open the disk image and drag **Musikbar** to your **Applications** folder.
 3. Launch the app.
 
-### ⚠️ Security Notice (Unsigned App)
+### Unsigned App
 
-The app is not code-signed, as I don't own an Apple Developer Certificate. There are two shortcomings:
-
-- On first launch, the app needs to be launched from Mac system settings / security.
-- On every start, the app will ask to accept incoming network connections
-
-You can overcome both by compiling the app from source yourself using your own developer certificate (see [Development](#development)).
+The app is not code-signed, as I don't own an Apple Developer Certificate. On first launch, the app needs to be launched from Mac system settings / security.
 
 ## Development
 
@@ -76,10 +71,6 @@ npm run make
 ```
 
 The built application will be available in `src-tauri/target/release/bundle/`.
-
-### Code Signing (Optional)
-
-To sign the app with your own Apple Developer certificate, configure Tauri's signing options in `src-tauri/tauri.conf.json`. See the [Tauri Code Signing docs](https://v2.tauri.app/distribute/sign/macos/) for more information.
 
 ## License
 
