@@ -1,6 +1,6 @@
 import Slider from 'react-rangeslider';
 import React, { useState, useRef, useEffect } from 'react';
-import {Pause, Play, Volume2, VolumeX, Speaker, Loader, Music, FastForward, ChevronDown} from 'react-feather';
+import {Pause, Play, Volume2, VolumeX, Speaker, Layers, Loader, Music, FastForward, ChevronDown} from 'react-feather';
 import 'react-rangeslider/lib/index.css';
 import './MenuBarContainer.css';
 import { api } from '../api/tauri';
@@ -122,8 +122,10 @@ const CurrentlyPlaying = (props) => {
 const Zone = (props) => {
     return (
         <div className='zone' onClick={props.onClick}>
-            <button type='button' className={props.isSelected ? 'active' : ''}><Speaker/></button>
-            <div className="zone-name">{props.zone.name} </div>
+            <button type='button' className={props.isSelected ? 'active' : ''}>
+                {props.zone.isGroup ? <Layers/> : <Speaker/>}
+            </button>
+            <div className="zone-name">{props.zone.name}</div>
             <div className="zone-isPlaying">{props.zone.isPlaying && <Music/>}</div>
         </div>
     )
