@@ -9,6 +9,8 @@ Musikbar allows you to control your Music Assistant players directly from your M
 
 ![Musikbar Interface](https://github.com/user-attachments/assets/b4b6e37d-8f6f-42c6-b92f-caa930bde1d2)
 
+![Favourite Options](https://github.com/user-attachments/assets/2efdc1d1-4839-454c-a779-fae00a231ea3)
+
 ## Features
 
 - **Zone Control**: View and control all your Music Assistant players and groups.
