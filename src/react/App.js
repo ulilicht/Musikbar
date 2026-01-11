@@ -173,10 +173,26 @@ class App extends React.Component {
             if (!queue) {
                // console.warn(`[App] No queue found for player ${p.name} (${p.player_id})`);
             }
+            
+            // Resolve group member names from player IDs
+            let groupMemberNames = [];
+            if (Array.isArray(p.group_childs) && p.group_childs.length > 0) {
+                groupMemberNames = p.group_childs.map(childId => {
+                    const childPlayer = players.find(pl => pl.player_id === childId);
+                    return childPlayer ? childPlayer.name : childId;
+                });
+            }
+            
+            // Build display name: for groups, show all member names joined with +
+            const displayName = groupMemberNames.length > 0 
+                ? groupMemberNames.join(' + ')
+                : p.name;
+            
             return {
-                name: p.name,
+                name: displayName,
                 udn: p.player_id,
                 isZone: p.type === 'group' || p.type === 'stereo_pair',
+                isGroup: (p.type === 'group' || p.type === 'stereo_pair') || (groupMemberNames.length > 0),
                 isPlaying: p.state === 'playing',
                 _raw: p, // Keep raw player
                 _queue: queue // Keep raw queue
