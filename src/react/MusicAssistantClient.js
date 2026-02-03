@@ -131,7 +131,7 @@ class MusicAssistantClient extends EventEmitter {
     // MA returns message_id as string sometimes, we store as number.
     const msgId = Number(data.message_id);
     if (!isNaN(msgId) && this.pendingRequests.has(msgId)) {
-      const { resolve, reject, command } = this.pendingRequests.get(msgId);
+      const { resolve, reject } = this.pendingRequests.get(msgId);
       this.pendingRequests.delete(msgId);
 
       // MA error format

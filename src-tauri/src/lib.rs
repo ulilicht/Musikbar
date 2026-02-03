@@ -224,19 +224,9 @@ pub fn run() {
         })
         .on_window_event(|window, event| {
             if let WindowEvent::Focused(false) = event {
-                // Hide main window on focus lost, except when devtools are open in dev mode
+                // Hide main window on focus lost (skip in dev mode to allow devtools inspection)
                 if window.label() == "main" {
-                    let should_hide = if tauri::is_dev() {
-                        window
-                            .app_handle()
-                            .get_webview_window(window.label())
-                            .map(|webview| !webview.is_devtools_open())
-                            .unwrap_or(true)
-                    } else {
-                        true
-                    };
-
-                    if should_hide {
+                    if !tauri::is_dev() {
                         let _ = window.hide();
                     }
                 }
