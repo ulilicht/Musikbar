@@ -1,6 +1,39 @@
-import EventEmitter from "events";
+class SimpleEventEmitter {
+  constructor() {
+    this.listeners = new Map();
+  }
 
-class MusicAssistantClient extends EventEmitter {
+  on(event, handler) {
+    if (!this.listeners.has(event)) {
+      this.listeners.set(event, new Set());
+    }
+    this.listeners.get(event).add(handler);
+    return this;
+  }
+
+  off(event, handler) {
+    if (!this.listeners.has(event)) {
+      return this;
+    }
+    this.listeners.get(event).delete(handler);
+    if (this.listeners.get(event).size === 0) {
+      this.listeners.delete(event);
+    }
+    return this;
+  }
+
+  emit(event, ...args) {
+    if (!this.listeners.has(event)) {
+      return false;
+    }
+    for (const handler of this.listeners.get(event)) {
+      handler(...args);
+    }
+    return true;
+  }
+}
+
+class MusicAssistantClient extends SimpleEventEmitter {
   constructor(url, token) {
     super();
     this.url = url;

@@ -4,9 +4,9 @@
   "version": "2.1.2",
   "identifier": "de.ulilicht.musikbar",
   "build": {
-    "frontendDist": "../build",
-    "devUrl": "http://localhost:3000",
-    "beforeDevCommand": "npm run start:react",
+    "frontendDist": "../dist",
+    "devUrl": "http://localhost:5174",
+    "beforeDevCommand": "npm run dev",
     "beforeBuildCommand": "npm run build"
   },
   "app": {
