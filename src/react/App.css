@@ -6,12 +6,17 @@
 html, body {
     overflow-x: hidden;
     overscroll-behavior: none;
+    height: 100%;
+    overflow: hidden;
 }
 
 .card-wrapper {
     background-color: rgba(255, 255, 255, 0.2);
     width: 400px;
-    min-height: 100vh;
+    height: 100vh;
+    overflow-y: auto;
+    overscroll-behavior: none;
+    -webkit-overflow-scrolling: auto;
     padding: 0.8rem;
     user-select: none;
     box-sizing: border-box;
@@ -101,4 +106,48 @@ button.ma-button svg {
     font-weight: 600;
     font-size: 14px;
     color: #333;
+}
+
+@media (prefers-color-scheme: dark) {
+    .loading {
+        color: #f5f5f5;
+    }
+
+    .card-wrapper {
+        background-color: rgba(20, 20, 20, 0.75);
+    }
+
+    .setup-required {
+        color: #f5f5f5;
+    }
+
+    .setup-required h2 {
+        color: #f5f5f5;
+    }
+
+    .setup-required p {
+        color: rgba(255, 255, 255, 0.7);
+    }
+
+    .error-details {
+        color: rgba(255, 255, 255, 0.6);
+    }
+
+    button.ma-button {
+        background-color: rgba(255, 255, 255, 0.12);
+        box-shadow: 0 1px 3px rgba(0,0,0,0.35);
+    }
+
+    button.ma-button:hover {
+        background-color: rgba(255, 255, 255, 0.2);
+        box-shadow: 0 4px 6px rgba(0,0,0,0.4);
+    }
+
+    button.ma-button svg {
+        color: #f0f0f0;
+    }
+
+    .ma-button-text {
+        color: #f0f0f0;
+    }
 }

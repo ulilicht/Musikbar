@@ -353,3 +353,113 @@ button.active svg {
 }
 
 /* ma-button styles moved to App.css */
+
+@media (prefers-color-scheme: dark) {
+    .currently-playing-placeholder,
+    .currently-playing-image-error {
+        background: rgba(255, 255, 255, 0.08);
+    }
+
+    .currently-playing-content {
+        color: #f5f5f5;
+    }
+
+    .currently-playing-content p {
+        opacity: 0.7;
+    }
+
+    .currently-playing-controls button svg {
+        fill: rgba(255, 255, 255, 0.8);
+    }
+
+    .volume-slider {
+        color: #f5f5f5;
+    }
+
+    .volume-slider-inner {
+        --volume-surface: rgba(255, 255, 255, 0.22);
+    }
+
+    .volume-slider-inner .icon {
+        background-color: var(--volume-surface);
+        color: rgba(255, 255, 255, 0.7);
+    }
+
+    .volume-slider-range .rangeslider {
+        background-color: rgba(255, 255, 255, 0.12);
+    }
+
+    .volume-slider-range .rangeslider .rangeslider__fill {
+        background-color: var(--volume-surface);
+    }
+
+    .volume-slider-range .rangeslider .rangeslider__handle {
+        background-color: #f5f5f5;
+        color: #f5f5f5;
+        box-shadow: -5px 0 10px 0 rgba(0, 0, 0, 0.35);
+    }
+
+    .zone-selector {
+        color: #f5f5f5;
+    }
+
+    .zone:hover {
+        background-color: rgba(255, 255, 255, 0.08);
+    }
+
+    .zone-isPlaying svg {
+        color: rgba(255, 255, 255, 0.5);
+    }
+
+    .favourite-image {
+        background: rgba(255, 255, 255, 0.08);
+    }
+
+    .favourites-hover-title {
+        color: rgba(255, 255, 255, 0.6);
+    }
+
+    .favourites-headline,
+    .favourites-headline-clickable {
+        color: #f5f5f5;
+    }
+
+    .favourites-headline-clickable:hover {
+        background-color: rgba(255, 255, 255, 0.08);
+    }
+
+    .favourites-dropdown-menu {
+        background-color: rgba(30, 30, 30, 0.92);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    }
+
+    .favourites-dropdown-item {
+        color: #f5f5f5;
+    }
+
+    .favourites-dropdown-item.active {
+        color: #4aa3ff;
+    }
+
+    .favourites-dropdown-item:hover {
+        background-color: rgba(255, 255, 255, 0.08);
+    }
+
+    .module-bg {
+        background-color: rgba(255, 255, 255, 0.06);
+        box-shadow: 0 0 5px rgba(0, 0, 0, 0.35);
+    }
+
+    button {
+        background-color: rgba(255, 255, 255, 0.12);
+    }
+
+    button svg {
+        color: #f5f5f5;
+    }
+
+    .divider {
+        background: rgba(255, 255, 255, 0.12);
+    }
+}
