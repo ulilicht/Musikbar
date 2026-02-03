@@ -19,7 +19,7 @@
     "new-github-issue-url": "^1.1.0"
   },
   "devDependencies": {
-    "@tauri-apps/cli": "^2.9.6",
+    "@tauri-apps/cli": "^2.10.0",
     "bumpp": "^10.4.0",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
