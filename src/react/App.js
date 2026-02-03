@@ -14,13 +14,14 @@ class App extends React.Component {
         this.didAutoSelectZoneOnFirstLaunch = false;
         this.unlistenSettings = null;
         this.state = {
-            view: 'loading', // 'loading' | 'main' | 'settings' | 'setup_required'
+            view: 'loading', // 'loading' | 'main' | 'settings' | 'setup_required' | 'error'
             isReady: false,
             config: null,
             selectedZoneUdn: '',
             nowPlaying: {},
             availableZones: [],
-            favourites: [] 
+            favourites: [],
+            error: null
         };
     }
 
@@ -93,18 +94,27 @@ class App extends React.Component {
 
         this.musicAssistant.on('systemReady', this.handleSystemReady.bind(this));
         this.musicAssistant.on('stateChanged', this.handleStateChanged.bind(this));
+        this.musicAssistant.on('connectionError', this.handleConnectionError.bind(this));
         
         this.musicAssistant.connect();
-        this.setState({ view: 'loading' });
+        this.setState({ view: 'loading', error: null, isReady: false });
     }
 
     handleSystemReady(ready) {
         console.log('EVENT: systemReady', ready);
         this.setState({ isReady: ready });
         if (ready) {
-            this.setState({ view: 'main' });
+            this.setState({ view: 'main', error: null });
             this.loadFavourites();
         }
+    }
+
+    handleConnectionError(error) {
+        this.setState({
+            view: 'error',
+            error: error,
+            isReady: false
+        });
     }
 
     handleStateChanged(stateData) {
@@ -419,6 +429,28 @@ class App extends React.Component {
                     <div className="card-wrapper rounded setup-required">
                         <h2>Welcome to Musikbar!</h2>
                         <p>Please configure your Music Assistant connection.</p>
+                        <div className="ma-button-wrapper">
+                            <button className="ma-button" onClick={() => api.openSettings()}>
+                                <div className="ma-button-icon">
+                                    <SettingsIcon />
+                                </div>
+                                <div className="ma-button-text">Open Settings</div>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )
+        }
+
+        if (this.state.view === 'error') {
+            return (
+                <div className="app">
+                    <div className="card-wrapper rounded setup-required">
+                        <h2>Connection issue</h2>
+                        <p>{this.state.error?.message || 'Unable to connect to Music Assistant.'}</p>
+                        {this.state.error?.detail ? (
+                            <div className="error-details">{this.state.error.detail}</div>
+                        ) : null}
                         <div className="ma-button-wrapper">
                             <button className="ma-button" onClick={() => api.openSettings()}>
                                 <div className="ma-button-icon">

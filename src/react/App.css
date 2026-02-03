@@ -43,6 +43,13 @@ html, body {
     font-size: 14px;
 }
 
+.error-details {
+    margin: -10px 0 20px 0;
+    font-size: 12px;
+    color: rgba(0, 0, 0, 0.6);
+    word-break: break-word;
+}
+
 /* OPEN BUTTON STYLES (SHARED) */
 .ma-button-wrapper {
     margin: 15px 0;

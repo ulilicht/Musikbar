@@ -9,6 +9,9 @@ class MusicAssistantClient extends EventEmitter {
     this.players = {};
     this.queues = {};
     this.isConnected = false;
+    this.shouldReconnect = true;
+    this.reconnectTimer = null;
+    this.authFailed = false;
     this.connectionId = null;
     this.messageId = 1;
     this.pendingRequests = new Map();
@@ -21,7 +24,6 @@ class MusicAssistantClient extends EventEmitter {
     this.ws = new WebSocket(wsUrl);
 
     this.ws.onopen = () => {
-      console.log("MA WebSocket connected");
       this.isConnected = true;
       this.authenticate();
     };
@@ -35,16 +37,22 @@ class MusicAssistantClient extends EventEmitter {
       }
     };
 
-    this.ws.onclose = () => {
-      console.log("MA WebSocket closed");
+    this.ws.onclose = (event) => {
       this.isConnected = false;
       this.emit("systemReady", false);
-      // Simple reconnect logic
-      setTimeout(() => this.connect(), 5000);
+
+      if (this.shouldReconnect && !this.authFailed) {
+        this.emitConnectionError("connection", "Unable to reach the server. Check URL/port.", event?.reason || "WebSocket closed");
+        // Simple reconnect logic
+        this.reconnectTimer = setTimeout(() => this.connect(), 5000);
+      }
     };
 
     this.ws.onerror = (err) => {
       console.error("MA WebSocket error", err);
+      if (this.shouldReconnect && !this.authFailed) {
+        this.emitConnectionError("connection", "Unable to reach the server. Check URL/port.", err?.message || "WebSocket error");
+      }
     };
   }
 
@@ -57,8 +65,16 @@ class MusicAssistantClient extends EventEmitter {
       })
       .catch(err => {
         console.error('Authentication failed', err);
-        // Optionally, emit an error event or handle reconnection
-        // For now, just log the error.
+        this.authFailed = true;
+        this.shouldReconnect = false;
+        this.emitConnectionError("auth", "Authentication failed. Please update your token.", err?.message || "Authentication failed");
+        if (this.ws) {
+          try {
+            this.ws.close();
+          } catch (e) {
+            // ignore
+          }
+        }
       });
   }
 
@@ -78,7 +94,21 @@ class MusicAssistantClient extends EventEmitter {
         // Let's stick to the current pattern:
         // But wait, fetchQueues needs to return them for Promise.all
         this.emitState();
-    }).catch(err => console.error('Failed to fetch initial state', err));
+    }).catch(err => {
+        console.error('Failed to fetch initial state', err);
+        if (this.isAuthErrorMessage(err?.message)) {
+            this.authFailed = true;
+            this.shouldReconnect = false;
+            this.emitConnectionError("auth", "Authentication failed. Please update your token.", err?.message || "Authentication failed");
+            if (this.ws) {
+                try {
+                    this.ws.close();
+                } catch (e) {
+                    // ignore
+                }
+            }
+        }
+    });
   }
 
   fetchQueues() {
@@ -101,15 +131,48 @@ class MusicAssistantClient extends EventEmitter {
     // MA returns message_id as string sometimes, we store as number.
     const msgId = Number(data.message_id);
     if (!isNaN(msgId) && this.pendingRequests.has(msgId)) {
-      const { resolve, reject } = this.pendingRequests.get(msgId);
+      const { resolve, reject, command } = this.pendingRequests.get(msgId);
       this.pendingRequests.delete(msgId);
 
       // MA error format
       if (data.error) {
-        reject(new Error(data.error));
+        const message = String(data.error);
+        if (this.isAuthErrorMessage(message)) {
+          this.authFailed = true;
+          this.shouldReconnect = false;
+          this.emitConnectionError("auth", "Authentication failed. Please update your token.", message);
+          if (this.ws) {
+            try {
+              this.ws.close();
+            } catch (e) {
+              // ignore
+            }
+          }
+        }
+        reject(new Error(message));
       } else {
         // Success
-        resolve(data.result !== undefined ? data.result : data);
+        const result = data.result !== undefined ? data.result : data;
+        const resultErrorMessage = this.extractErrorMessage(result);
+        if (resultErrorMessage && this.isAuthErrorMessage(resultErrorMessage)) {
+          this.authFailed = true;
+          this.shouldReconnect = false;
+          this.emitConnectionError("auth", "Authentication failed. Please update your token.", resultErrorMessage);
+          if (this.ws) {
+            try {
+              this.ws.close();
+            } catch (e) {
+              // ignore
+            }
+          }
+          reject(new Error(resultErrorMessage));
+          return;
+        }
+        if (result === false) {
+          reject(new Error("Authentication failed"));
+        } else {
+          resolve(result);
+        }
       }
     }
   }
@@ -149,6 +212,35 @@ class MusicAssistantClient extends EventEmitter {
     this.emit("stateChanged", state);
   }
 
+  emitConnectionError(type, message, detail) {
+    this.emit("connectionError", {
+      type: type || "unknown",
+      message: message || "Connection error",
+      detail: detail || ""
+    });
+  }
+
+  isAuthErrorMessage(message) {
+    if (!message) return false;
+    const normalized = message.toLowerCase();
+    return normalized.includes("auth") || normalized.includes("unauthorized") || normalized.includes("forbidden");
+  }
+
+  extractErrorMessage(result) {
+    if (!result) return "";
+    if (typeof result === "string") return result;
+    if (typeof result === "object") {
+      if (typeof result.error === "string") return result.error;
+      if (typeof result.message === "string") return result.message;
+      if (typeof result.details === "string") return result.details;
+      if (typeof result.detail === "string") return result.detail;
+      if (typeof result.error_code === "number" && typeof result.details === "string") {
+        return `${result.error_code}: ${result.details}`;
+      }
+    }
+    return "";
+  }
+
   async sendCommand(command, args = {}) {
     if (!this.isConnected || !this.ws) {
       throw new Error('WebSocket not connected');
@@ -162,7 +254,7 @@ class MusicAssistantClient extends EventEmitter {
     };
 
     return new Promise((resolve, reject) => {
-      this.pendingRequests.set(id, { resolve, reject });
+      this.pendingRequests.set(id, { resolve, reject, command });
 
       try {
         this.ws.send(JSON.stringify(payload));
