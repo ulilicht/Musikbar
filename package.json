@@ -24,7 +24,7 @@
   "devDependencies": {
     "@tauri-apps/cli": "^2.9.6",
     "@vitejs/plugin-react": "^4.7.0",
-    "bumpp": "^10.4.0",
+    "bumpp": "^10.4.1",
     "vite": "^6.1.1"
   },
   "scripts": {
