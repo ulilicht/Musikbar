@@ -1,9 +1,8 @@
-import Slider from 'react-rangeslider';
 import React, { useState, useRef, useEffect } from 'react';
 import {Pause, Play, Volume2, VolumeX, Speaker, Layers, Loader, Music, FastForward, ChevronDown} from 'react-feather';
-import 'react-rangeslider/lib/index.css';
 import './MenuBarContainer.css';
 import { api } from '../api/tauri';
+import RangeSlider from '../components/RangeSlider';
 
 class VolumeSlider extends React.Component {
     constructor(props) {
@@ -61,14 +60,12 @@ class VolumeSlider extends React.Component {
                         </div>
                     </button>
                     <div className='volume-slider-range'>
-                        <Slider
+                        <RangeSlider
                             min={0}
                             max={100}
                             value={this.state.volumeValueInternal}
-                            tooltip={false}
-                            orientation="horizontal"
                             onChange={value => this.setVolumeValueInternal(value)}
-                            onChangeComplete={value => this.changeVolume(value)}
+                            onChangeComplete={() => this.changeVolume()}
                         />
                     </div>
                 </div>
@@ -327,5 +324,4 @@ export default class MenuBarContainer extends React.Component {
         }
     }
 }
-
 

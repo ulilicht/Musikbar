@@ -16,29 +16,24 @@
     "@tauri-apps/plugin-shell": "^2.3.4",
     "@tauri-apps/plugin-store": "^2.4.2",
     "debug": "^4.4.3",
-    "new-github-issue-url": "^1.1.0"
+    "new-github-issue-url": "^1.1.0",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
+    "react-feather": "^2.0.10"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2.9.6",
+    "@vitejs/plugin-react": "^4.7.0",
     "bumpp": "^10.4.0",
-    "react": "^19.2.4",
-    "react-dom": "^19.2.4",
-    "react-feather": "^2.0.10",
-    "react-rangeslider": "^2.2.0",
-    "react-scripts": "5.0.1"
+    "vite": "^6.1.1"
   },
   "scripts": {
+    "dev": "vite",
     "start": "tauri dev",
-    "start:react": "BROWSER=none react-scripts start",
-    "build": "react-scripts build",
+    "build": "vite build",
+    "preview": "vite preview",
     "tauri": "tauri",
     "make": "tauri build"
-  },
-  "eslintConfig": {
-    "extends": [
-      "react-app",
-      "react-app/jest"
-    ]
   },
   "browserslist": {
     "production": [

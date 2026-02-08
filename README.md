@@ -33,7 +33,7 @@ The app is not code-signed, as I don't own an Apple Developer Certificate. On fi
 
 ### Basics
 
-The app is created using React, Tauri and connects to [Music Assistant](https://music-assistant.io/).
+The app is created using React, Tauri, Vite and connects to [Music Assistant](https://music-assistant.io/).
 
 To get started, read about the concepts in
 
@@ -52,8 +52,11 @@ To get started, read about the concepts in
 # Install dependencies
 npm install
 
-# Start the app in development mode
+# Start the app in development mode (Tauri + Vite)
 npm start
+
+# Start frontend only
+npm run dev
 ```
 
 This will launch both the React dev server and the Tauri application.
