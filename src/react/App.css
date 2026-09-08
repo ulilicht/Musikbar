@@ -19,6 +19,7 @@ html, body {
     -webkit-overflow-scrolling: auto;
     padding: 0.8rem;
     user-select: none;
+    -webkit-user-select: none;
     box-sizing: border-box;
 }
 

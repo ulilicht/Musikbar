@@ -84,7 +84,7 @@ const CurrentlyPlaying = (props) => {
 
 
 
-    const shouldShowPlayPause = props.nowPlaying.canPlayPause || props.nowPlaying.isLoading;
+    const shouldShowPlayPause = props.nowPlaying.canPlayPause || props.nowPlaying.isPlaying || props.nowPlaying.isLoading;
 
 
     return (
@@ -94,6 +94,7 @@ const CurrentlyPlaying = (props) => {
                     src={props.nowPlaying.image || './default-cover.png'} 
                     width="80" 
                     alt={props.nowPlaying.track}
+                    draggable="false"
                     onError={(e) => { e.target.src = './default-cover.png'; }}
                 />
             </div>
@@ -145,7 +146,15 @@ const Favourite = (props) => {
     return (
         <div 
             className='favourite' 
+            role="button"
+            tabIndex={0}
             onClick={props.onClick} 
+            onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    props.onClick && props.onClick();
+                }
+            }}
             onMouseEnter={() => props.onHover && props.onHover(props.favourite.name)}
             onMouseLeave={() => props.onHover && props.onHover(null)}
             title={props.favourite.name}
@@ -154,6 +163,7 @@ const Favourite = (props) => {
                 src={props.favourite.image || './default-cover.png'} 
                 alt={props.favourite.name} 
                 className="favourite-image"
+                draggable="false"
                 onError={(e) => { e.target.src = './default-cover.png'; }}
             />
         </div>
