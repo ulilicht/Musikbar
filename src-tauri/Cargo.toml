@@ -1,6 +1,6 @@
 [package]
 name = "Musikbar"
-version = "2.1.2"
+version = "2.1.3"
 description = "A Mac Menubar app to control Music Assistant."
 authors = ["Ulrich Lichtenegger"]
 license = "MIT"

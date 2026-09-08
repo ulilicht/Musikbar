@@ -32,6 +32,10 @@
     height: 80px;
     border-radius: 5px;
     object-fit: cover;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-user-drag: none;
+    pointer-events: none;
 }
 
 .currently-playing-placeholder,
@@ -234,12 +238,22 @@
     grid-template-columns: repeat(5, 1fr);
     gap: 10px;
     padding: 10px 0;
+    user-select: none;
+    -webkit-user-select: none;
 }
 
 .favourite {
     cursor: pointer;
     border-radius: 4px;
     overflow: hidden;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-user-drag: none;
+    outline: none;
+}
+
+.favourite:focus-visible {
+    outline: 2px solid rgba(0, 0, 0, 0.4);
 }
 
 .favourite:active {
@@ -253,6 +267,10 @@
     object-fit: cover;
     background: rgba(0, 0, 0, 0.05);
     display: block;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-user-drag: none;
+    pointer-events: none;
 }
 
 

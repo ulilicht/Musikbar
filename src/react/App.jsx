@@ -214,6 +214,47 @@ class App extends React.Component {
         return zones.find(zone => zone.udn === this.state.selectedZoneUdn);
     }
     
+    resolveImageUrl(imageUrl) {
+        if (!imageUrl || typeof imageUrl !== 'string') return '';
+        const configuredUrl = this.state.config?.musicAssistantUrl;
+        if (!configuredUrl) return imageUrl;
+
+        const cleanConfigUrl = configuredUrl.replace(/\/+$/, '');
+
+        // Relative path: e.g. /imageproxy/...
+        if (imageUrl.startsWith('/')) {
+            return cleanConfigUrl + imageUrl;
+        }
+
+        // Check if the URL points to a local/private IP or localhost (often returned by MA backend)
+        try {
+            const urlObj = new URL(imageUrl);
+            const host = urlObj.hostname;
+            const isLocal = host.startsWith('192.168.') ||
+                            host.startsWith('10.') ||
+                            host.startsWith('172.16.') ||
+                            host.startsWith('172.17.') ||
+                            host.startsWith('172.18.') ||
+                            host.startsWith('172.19.') ||
+                            host.startsWith('172.2') ||
+                            host.startsWith('172.3') ||
+                            host === 'localhost' ||
+                            host === '127.0.0.1';
+
+            if (isLocal) {
+                const targetObj = new URL(cleanConfigUrl);
+                urlObj.protocol = targetObj.protocol;
+                urlObj.hostname = targetObj.hostname;
+                urlObj.port = targetObj.port;
+                return urlObj.toString();
+            }
+        } catch (e) {
+            // Not a parseable URL, return as is
+        }
+
+        return imageUrl;
+    }
+
     loadNowPlaying(zoneObj) {
         if (!zoneObj || !zoneObj._raw) return;
         const player = zoneObj._raw;
@@ -223,8 +264,24 @@ class App extends React.Component {
         // { artist, track, image, isPlaying, isLoading, isMuted, volume, canPlayPause, canPlayNext }
 
         const features = player.supported_features || [];
-        const canPlayPause = features.includes('pause') || features.includes('play_pause');
-        let canPlayNext = features.includes('next');
+        const activeSource = player.source_list?.find(s => s.id === player.active_source);
+        const sourceCanPlayPause = activeSource ? Boolean(activeSource.can_play_pause) : false;
+        const sourceCanNextPrevious = activeSource ? Boolean(activeSource.can_next_previous) : false;
+
+        const isPlaying = player.state === 'playing' || player.playback_state === 'playing';
+        const isPaused = player.state === 'paused' || player.playback_state === 'paused';
+        const hasQueueItem = Boolean(queue && (queue.current_item || (queue.items && queue.items > 0)));
+
+        const canPlayPause = features.includes('pause') ||
+                             features.includes('play_pause') ||
+                             sourceCanPlayPause ||
+                             isPlaying ||
+                             (isPaused && hasQueueItem);
+
+        let canPlayNext = features.includes('next') ||
+                          features.includes('next_previous') ||
+                          sourceCanNextPrevious;
+
         // Logic to determine if we can play next based on queue if player doesn't validly report it
         if (!canPlayNext && queue) {
              const itemCount = typeof queue.items === 'number' ? queue.items : (Array.isArray(queue.items) ? queue.items.length : 0);
@@ -236,11 +293,6 @@ class App extends React.Component {
         
         const metadata = this.extractMetadata(player, queue);
         // console.log('[App] Loaded metadata for', zoneObj.name, metadata);
-        
-        // Determine playing state: always use player.state as the source of truth
-        // The player_updated event is sent when play/pause commands are executed,
-        // while queue_updated events are for queue-specific changes (e.g., track changes)
-        const isPlaying = player.state === 'playing';
 
         this.setState({
             nowPlaying: {
@@ -271,21 +323,51 @@ class App extends React.Component {
             return {
                 artist: media.artist || '',
                 track: media.title || '',
-                image: media.image_url || ''
+                image: this.resolveImageUrl(media.image_url || '')
             };
         }
         
         // Try Queue Item for regular MA playback
         if (queue && queue.current_item) {
             const item = queue.current_item;
+            const mediaItem = item.media_item;
+            
+            // Artist resolution: item.artist -> item.artists -> mediaItem.artists -> mediaItem.artist
+            let artist = '';
+            if (item.artist) {
+                artist = typeof item.artist === 'string' ? item.artist : (item.artist.name || '');
+            } else if (Array.isArray(item.artists) && item.artists.length > 0) {
+                artist = item.artists.map(a => typeof a === 'string' ? a : (a.name || '')).filter(Boolean).join(', ');
+            } else if (mediaItem) {
+                if (mediaItem.artist) {
+                    artist = typeof mediaItem.artist === 'string' ? mediaItem.artist : (mediaItem.artist.name || '');
+                } else if (Array.isArray(mediaItem.artists) && mediaItem.artists.length > 0) {
+                    artist = mediaItem.artists.map(a => typeof a === 'string' ? a : (a.name || '')).filter(Boolean).join(', ');
+                }
+            }
+            if (!artist && player.current_media?.artist) {
+                artist = player.current_media.artist;
+            }
+
+            // Track title resolution
+            const track = (mediaItem && mediaItem.name) || item.name || player.current_media?.title || '';
+
+            // Image resolution
+            let rawImage = '';
+            if (item.image) {
+                rawImage = typeof item.image === 'string' ? item.image : (item.image.path || '');
+            } else if (mediaItem?.metadata?.images?.length > 0) {
+                rawImage = mediaItem.metadata.images[0].path || '';
+            } else if (player.current_media?.image_url) {
+                rawImage = player.current_media.image_url;
+            }
+
             return {
-                artist: item.artist ? item.artist.name : (item.artists ? item.artists.map(a=>a.name).join(', ') : ''),
-                track: item.name || '',
-                image: item.image ? (item.image.path || item.image) : ''
+                artist: artist || '',
+                track: track || '',
+                image: this.resolveImageUrl(rawImage)
             };
         }
-        
-        // console.log('[App] No current_item in queue', queue);
         
         // Fallback to player current_media
         const media = player.current_media;
@@ -294,7 +376,7 @@ class App extends React.Component {
         return {
             artist: media.artist || '',
             track: media.title || '',
-            image: media.image_url || ''
+            image: this.resolveImageUrl(media.image_url || '')
         };
     }
 
@@ -318,28 +400,13 @@ class App extends React.Component {
              // - Recently played: item.image (string or { path, ... })
              // - Library items (radios, playlists, artists): item.metadata.images (array of { path, type, ... })
              const mapped = items.map(item => {
-                 let imageUrl = '';
-                 const serverUrl = this.state.config?.musicAssistantUrl || '';
-                 
-                 // First, try the direct image property (used by recently_played_items)
+                 let rawImagePath = '';
                  if (item.image) {
-                     if (typeof item.image === 'string') {
-                         imageUrl = item.image;
-                     } else if (item.image.path) {
-                         imageUrl = item.image.remotely_accessible 
-                             ? item.image.path 
-                             : serverUrl + item.image.path;
-                     }
+                     rawImagePath = typeof item.image === 'string' ? item.image : (item.image.path || '');
+                 } else if (item.metadata?.images?.length > 0) {
+                     rawImagePath = item.metadata.images[0].path || '';
                  }
-                 // Fallback: check metadata.images (used by library items like radios, playlists, artists)
-                 else if (item.metadata?.images?.length > 0) {
-                     const firstImage = item.metadata.images[0];
-                     if (firstImage.path) {
-                         imageUrl = firstImage.remotely_accessible 
-                             ? firstImage.path 
-                             : serverUrl + firstImage.path;
-                     }
-                 }
+                 const imageUrl = this.resolveImageUrl(rawImagePath);
                  
                  return {
                      name: item.name,

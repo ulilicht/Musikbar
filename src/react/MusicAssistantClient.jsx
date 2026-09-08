@@ -41,6 +41,7 @@ class MusicAssistantClient extends SimpleEventEmitter {
     this.ws = null;
     this.players = {};
     this.queues = {};
+    this.serverInfo = null;
     this.isConnected = false;
     this.shouldReconnect = true;
     this.reconnectTimer = null;
@@ -51,8 +52,9 @@ class MusicAssistantClient extends SimpleEventEmitter {
   }
 
   connect() {
-    // Construct WebSocket URL from HTTP URL
-    const wsUrl = this.url.replace("http", "ws") + "/ws";
+    // Construct WebSocket URL from HTTP URL (sanitizing trailing slashes)
+    const cleanUrl = (this.url || "").replace(/\/+$/, "");
+    const wsUrl = cleanUrl.replace(/^http/, "ws") + "/ws";
 
     this.ws = new WebSocket(wsUrl);
 
@@ -155,6 +157,12 @@ class MusicAssistantClient extends SimpleEventEmitter {
   }
 
   handleMessage(data) {
+    if (data.server_id && data.server_version) {
+      this.serverInfo = data;
+      console.log(`[MusicAssistantClient] Connected to MA server ${data.server_version} (schema ${data.schema_version})`);
+      return;
+    }
+
     if (data.event) {
       this.handleEvent(data);
       return;
@@ -369,15 +377,42 @@ class MusicAssistantClient extends SimpleEventEmitter {
     try {
       const recommendations = await this.getRecommendations();
       const folder = recommendations.find(f => f.item_id === categoryId);
-      if (!folder || !Array.isArray(folder.items)) {
-        console.warn(`Category '${categoryId}' not found in recommendations`);
-        return [];
+      if (folder && Array.isArray(folder.items) && folder.items.length > 0) {
+        return folder.items.slice(0, limit);
       }
-      return folder.items.slice(0, limit);
+      // In MA 2.9+ / 2.10+, music/recommendations returns folder shells with empty items: []
+      // Fallback directly to specific library endpoints
+      return await this.fetchCategoryFallback(categoryId, limit);
     } catch (e) {
-      console.error(`Failed to get recommendations for category '${categoryId}'`, e);
-      return [];
+      console.warn(`Failed to get recommendations for category '${categoryId}', trying fallback:`, e);
+      return await this.fetchCategoryFallback(categoryId, limit);
     }
+  }
+
+  async fetchCategoryFallback(categoryId, limit = 20) {
+    try {
+      if (categoryId === 'recently_played') {
+        const res = await this.sendCommand("music/recently_played_items", { limit });
+        return Array.isArray(res) ? res.slice(0, limit) : (res?.items || []).slice(0, limit);
+      }
+      if (categoryId === 'favorite_radio') {
+        const res = await this.sendCommand("music/radios/library_items", { favorite: true });
+        return Array.isArray(res) ? res.slice(0, limit) : (res?.items || []).slice(0, limit);
+      }
+      if (categoryId === 'favorite_playlists') {
+        const res = await this.sendCommand("music/playlists/library_items", { favorite: true });
+        return Array.isArray(res) ? res.slice(0, limit) : (res?.items || []).slice(0, limit);
+      }
+      if (categoryId === 'random_artists') {
+        const res = await this.sendCommand("music/artists/library_items", { favorite: true });
+        let items = Array.isArray(res) ? res : (res?.items || []);
+        items = [...items].sort(() => 0.5 - Math.random());
+        return items.slice(0, limit);
+      }
+    } catch (err) {
+      console.error(`Fallback failed for category '${categoryId}'`, err);
+    }
+    return [];
   }
 }
 
