@@ -1,8 +1,32 @@
 import React, { useState, useRef, useEffect } from 'react';
-import {Pause, Play, Volume2, VolumeX, Speaker, Layers, Loader, Music, FastForward, ChevronDown} from 'react-feather';
+import {Pause, Play, Volume2, VolumeX, Speaker, Layers, Loader, Music, FastForward, ChevronDown, Link, ArrowRightCircle} from 'react-feather';
 import './MenuBarContainer.css';
 import { api } from '../api/tauri';
 import RangeSlider from '../components/RangeSlider';
+
+// Lucide Icon 'unlink' (ISC License)
+// Copyright (c) 2026 Lucide Icons and Contributors (https://lucide.dev)
+const Unlink = ({ size = 24, color = 'currentColor', ...props }) => (
+    <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width={size}
+        height={size}
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke={color}
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        {...props}
+    >
+        <path d="m18.84 12.25 1.72-1.71h-.02a5.004 5.004 0 0 0-.12-7.07 5.006 5.006 0 0 0-6.95 0l-1.72 1.71" />
+        <path d="m5.17 11.75-1.71 1.71a5.004 5.004 0 0 0 .12 7.07 5.006 5.006 0 0 0 6.95 0l1.71-1.71" />
+        <line x1="8" x2="8" y1="2" y2="5" />
+        <line x1="2" x2="5" y1="8" y2="8" />
+        <line x1="16" x2="16" y1="19" y2="22" />
+        <line x1="19" x2="22" y1="16" y2="16" />
+    </svg>
+);
 
 class VolumeSlider extends React.Component {
     constructor(props) {
@@ -118,29 +142,144 @@ const CurrentlyPlaying = (props) => {
 }
 
 const Zone = (props) => {
+    const [isHovered, setIsHovered] = useState(false);
+    const { zone, isSelected, selectedZone, nowPlaying, joinZone, transferQueue, ungroupZone, isLeaving, onClick } = props;
+
+    // Actions are only relevant when:
+    // 1. Music is actively playing on the selected zone
+    // 2. This zone is NOT the selected zone
+    const isPlaying = Boolean(nowPlaying && nowPlaying.isPlaying);
+    const isOtherZone = !isSelected && Boolean(selectedZone);
+
+    const targetPlayer = zone._raw;
+    const selectedPlayer = selectedZone?._raw;
+
+    // Check if already joined/synced together
+    const isAlreadyJoined = Boolean(
+        selectedPlayer && targetPlayer && (
+            selectedPlayer.group_childs?.includes(targetPlayer.player_id) ||
+            selectedPlayer.group_members?.includes(targetPlayer.player_id) ||
+            targetPlayer.synced_to === selectedPlayer.player_id ||
+            selectedPlayer.synced_to === targetPlayer.player_id
+        )
+    );
+
+    // Can Join:
+    // Available, not already joined, and MA can_group_with allows grouping
+    const canJoin = Boolean(
+        isPlaying &&
+        isOtherZone &&
+        targetPlayer?.available &&
+        !isAlreadyJoined &&
+        (
+            selectedPlayer?.can_group_with?.includes(targetPlayer.player_id) ||
+            targetPlayer?.can_group_with?.includes(selectedPlayer?.player_id) ||
+            selectedPlayer?.supported_features?.includes('set_members') ||
+            targetPlayer?.supported_features?.includes('set_members')
+        )
+    );
+
+    // Can Transfer Queue:
+    // Available, not already joined
+    const canTransfer = Boolean(
+        isPlaying &&
+        isOtherZone &&
+        targetPlayer?.available &&
+        !isAlreadyJoined
+    );
+
+    // Can Ungroup:
+    // This zone is an active group (has joined members)
+    const canUngroup = Boolean(zone.isGroup);
+
+    const hasActions = canJoin || canTransfer || canUngroup;
+
     return (
-        <div className='zone' onClick={props.onClick}>
-            <button type='button' className={props.isSelected ? 'active' : ''}>
-                {props.zone.isGroup ? <Layers/> : <Speaker/>}
+        <div 
+            className={`zone ${isLeaving ? 'zone--leaving' : ''}`}
+            onClick={onClick}
+            onMouseEnter={() => setIsHovered(true)}
+            onMouseLeave={() => setIsHovered(false)}
+        >
+            <button type='button' className={isSelected ? 'active' : ''}>
+                {zone.isGroup ? <Layers/> : <Speaker/>}
             </button>
-            <div className="zone-name">{props.zone.name}</div>
-            <div className="zone-isPlaying">{props.zone.isPlaying && <Music/>}</div>
+            <div className="zone-name">{zone.name}</div>
+            {isHovered && hasActions ? (
+                <div className="zone-actions">
+                    {canUngroup && (
+                        <button 
+                            type="button" 
+                            className="zone-action-btn zone-action-btn--ungroup"
+                            title="Dissolve group"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                ungroupZone && ungroupZone(zone);
+                            }}
+                        >
+                            <Unlink size={13} />
+                        </button>
+                    )}
+                    {canJoin && (
+                        <button 
+                            type="button" 
+                            className="zone-action-btn"
+                            title={`Join with ${selectedZone?.name || 'current room'}`}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                joinZone && joinZone(zone);
+                            }}
+                        >
+                            <Link size={13} />
+                        </button>
+                    )}
+                    {canTransfer && (
+                        <button 
+                            type="button" 
+                            className="zone-action-btn"
+                            title={`Transfer queue to ${zone.name}`}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                transferQueue && transferQueue(zone);
+                            }}
+                        >
+                            <ArrowRightCircle size={13} />
+                        </button>
+                    )}
+                </div>
+            ) : (
+                <div className="zone-isPlaying">{zone.isPlaying && <Music/>}</div>
+            )}
         </div>
-    )
-}
+    );
+};
 
 const ZoneSelector = (props) => {
+    const selectedZone = props.zones.find(z => z.udn === props.selectedZoneUdn);
     return (
         <div className='zone-selector'>
             <div className='divider'/>
             <div className='zone-headline'>Zones</div>
-            {props.zones.map((zone, i) => {
-                return (<Zone key={zone.udn} isSelected={zone.udn === props.selectedZoneUdn} zone={zone}
-                              onClick={() => props.setZone(zone)}/>)
+            {props.zones.map((zone) => {
+                const isLeaving = Array.isArray(props.leavingZoneUdns) && props.leavingZoneUdns.includes(zone.udn);
+                return (
+                    <Zone 
+                        key={zone.udn} 
+                        isSelected={zone.udn === props.selectedZoneUdn} 
+                        zone={zone}
+                        selectedZone={selectedZone}
+                        nowPlaying={props.nowPlaying}
+                        joinZone={props.joinZone}
+                        ungroupZone={props.ungroupZone}
+                        transferQueue={props.transferQueue}
+                        isLeaving={isLeaving}
+                        onClick={() => props.setZone(zone)}
+                    />
+                );
             })}
         </div>
-    )
-}
+    );
+};
 
 const Favourite = (props) => {
     return (
@@ -310,7 +449,12 @@ export default class MenuBarContainer extends React.Component {
                     <VolumeSlider nowPlaying={this.props.nowPlaying} setMute={this.props.setMute}
                                   setVolume={this.props.setVolume}/>
                     <ZoneSelector zones={this.props.availableZones} selectedZoneUdn={this.props.selectedZoneUdn}
-                                  setZone={this.props.setZone}/>
+                                  setZone={this.props.setZone}
+                                  nowPlaying={this.props.nowPlaying}
+                                  joinZone={this.props.joinZone}
+                                  ungroupZone={this.props.ungroupZone}
+                                  transferQueue={this.props.transferQueue}
+                                  leavingZoneUdns={this.props.leavingZoneUdns}/>
                     <Favourites 
                         favourites={this.props.favourites} 
                         playFavourite={this.props.playFavourite}
@@ -325,7 +469,13 @@ export default class MenuBarContainer extends React.Component {
         } else {
             return (
                 <div className='card-wrapper rounded'>
-                    <ZoneSelector zones={this.props.availableZones} setZone={this.props.setZone}/>
+                    <ZoneSelector zones={this.props.availableZones} 
+                                  setZone={this.props.setZone}
+                                  nowPlaying={this.props.nowPlaying}
+                                  joinZone={this.props.joinZone}
+                                  ungroupZone={this.props.ungroupZone}
+                                  transferQueue={this.props.transferQueue}
+                                  leavingZoneUdns={this.props.leavingZoneUdns}/>
                     {this.props.shownShortcuts.ma && <OpenMusicAssistantButton url={this.props.musicAssistantUrl} />}
                     {this.props.shownShortcuts.spotify && <OpenSpotifyButton />}
                     {this.props.shownShortcuts.apple && <OpenAppleMusicButton />}
