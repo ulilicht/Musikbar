@@ -206,7 +206,20 @@
     display: flex;
     align-items: center;
     padding: 3px;
+    max-height: 40px;
+    overflow: hidden;
+    transition: opacity 0.35s ease, transform 0.35s ease, max-height 0.35s ease, padding 0.35s ease, margin 0.35s ease;
+}
 
+.zone--leaving {
+    opacity: 0;
+    transform: translateX(35px) scale(0.92);
+    max-height: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    margin-top: 0;
+    margin-bottom: 0;
+    pointer-events: none;
 }
 
 .zone:hover {
@@ -228,6 +241,43 @@
 .zone-isPlaying svg {
     height: 16px;
     color: rgba(0, 0, 0, 0.4);
+}
+
+.zone-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-right: 2px;
+}
+
+.zone-action-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    border: none;
+    border-radius: 4px;
+    background: rgba(0, 0, 0, 0.08);
+    color: rgba(0, 0, 0, 0.65);
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.zone-action-btn:hover {
+    background: rgba(0, 0, 0, 0.16);
+    color: #000;
+    transform: scale(1.08);
+}
+
+.zone-action-btn:active {
+    transform: scale(0.95);
+}
+
+.zone-action-btn--ungroup:hover {
+    background: rgba(229, 57, 53, 0.15);
+    color: #e53935;
 }
 
 
@@ -476,6 +526,21 @@ button.active svg {
 
     .zone-isPlaying svg {
         color: rgba(255, 255, 255, 0.5);
+    }
+
+    .zone-action-btn {
+        background: rgba(255, 255, 255, 0.1);
+        color: rgba(255, 255, 255, 0.75);
+    }
+
+    .zone-action-btn:hover {
+        background: rgba(255, 255, 255, 0.22);
+        color: #fff;
+    }
+
+    .zone-action-btn--ungroup:hover {
+        background: rgba(255, 75, 75, 0.25);
+        color: #ff6b6b;
     }
 
     .favourite-image {

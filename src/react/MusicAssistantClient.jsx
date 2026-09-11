@@ -354,6 +354,33 @@ class MusicAssistantClient extends SimpleEventEmitter {
     });
   }
 
+  joinPlayer(targetPlayerId, playerToJoinId) {
+    return this.sendCommand("players/cmd/set_members", {
+      target_player: targetPlayerId,
+      player_ids_to_add: [playerToJoinId],
+    });
+  }
+
+  transferQueue(sourceQueueId, targetQueueId, autoPlay = true) {
+    return this.sendCommand("player_queues/transfer", {
+      source_queue_id: sourceQueueId,
+      target_queue_id: targetQueueId,
+      auto_play: autoPlay,
+    });
+  }
+
+  ungroupPlayer(leaderPlayerId, childPlayerIds = []) {
+    if (Array.isArray(childPlayerIds) && childPlayerIds.length > 0) {
+      return this.sendCommand("players/cmd/set_members", {
+        target_player: leaderPlayerId,
+        player_ids_to_remove: childPlayerIds,
+      });
+    }
+    return this.sendCommand("players/cmd/ungroup", {
+      player_id: leaderPlayerId,
+    });
+  }
+
   /**
    * Fetch all recommendations from the unified endpoint.
    * Returns an array of folder objects, each containing items.

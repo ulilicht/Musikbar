@@ -20,6 +20,7 @@ class App extends React.Component {
             selectedZoneUdn: '',
             nowPlaying: {},
             availableZones: [],
+            leavingZoneUdns: [],
             favourites: [],
             error: null
         };
@@ -156,26 +157,46 @@ class App extends React.Component {
             console.error('[App] players is not an array', players);
             return [];
         }
+
+        // Collect all child player IDs across all sync groups and group players
+        const syncedChildIds = new Set();
+        players.forEach(pl => {
+            if (pl.synced_to) {
+                syncedChildIds.add(pl.player_id);
+            }
+            if (Array.isArray(pl.group_childs)) {
+                pl.group_childs.forEach(cid => {
+                    if (cid !== pl.player_id) syncedChildIds.add(cid);
+                });
+            }
+            if (Array.isArray(pl.group_members)) {
+                pl.group_members.forEach(mid => {
+                    if (mid !== pl.player_id) syncedChildIds.add(mid);
+                });
+            }
+        });
+
         // Map MA Player -> UI Zone
         // UI expects: { name, udn, isZone: ?, isPlaying }
-        // Filter out players based on hide_player_in_ui settings
+        // Filter out players based on sync status and visibility settings
         return players.filter(p => {
+             // Synced child/follower players in a group should never be shown separately
+             if (syncedChildIds.has(p.player_id)) {
+                 return false;
+             }
+
              // Default hidden flags if missing (safety check)
              const hiddenFlags = p.hide_player_in_ui || [];
-             
+
              // Check if hidden because unavailable
              if (!p.available && hiddenFlags.includes('when_unavailable')) {
                  return false;
              }
              
-             // Check if hidden because synced (member of a group)
-             if (p.synced_to && hiddenFlags.includes('when_synced')) {
+             // Check if hidden because synced
+             if (p.synced_to) {
                  return false;
              }
-             
-             // Also check active group masking? 
-             // Logic in HA/MA often hides players that are part of an active group if 'when_group_active' is set
-             // But valid synced_to check above usually covers the follower case.
              
              return true;
         }).map(p => {
@@ -486,6 +507,89 @@ class App extends React.Component {
         if (zone) this.musicAssistant.next(zone.udn);
     }
 
+    joinZone(targetZone) {
+        const selectedZone = this.getSelectedZone();
+        if (!selectedZone || !targetZone || !this.musicAssistant) return;
+
+        // Trigger leaving animation on the joined target zone immediately
+        this.setState(prevState => ({
+            leavingZoneUdns: [...prevState.leavingZoneUdns, targetZone.udn]
+        }));
+
+        this.musicAssistant.joinPlayer(selectedZone.udn, targetZone.udn).then(() => {
+            return this.musicAssistant.sendCommand('players/all');
+        }).then(freshPlayers => {
+            if (Array.isArray(freshPlayers)) {
+                freshPlayers.forEach(p => {
+                    this.musicAssistant.players[p.player_id] = p;
+                });
+                this.musicAssistant.emitState();
+            }
+        }).catch(err => {
+            console.error('Failed to join zone', err);
+            // Revert animation state on error
+            this.setState(prevState => ({
+                leavingZoneUdns: prevState.leavingZoneUdns.filter(id => id !== targetZone.udn)
+            }));
+        });
+
+        // Clean up leaving state after animation completes
+        setTimeout(() => {
+            this.setState(prevState => ({
+                leavingZoneUdns: prevState.leavingZoneUdns.filter(id => id !== targetZone.udn)
+            }));
+        }, 600);
+    }
+
+    ungroupZone(zone) {
+        const targetZone = zone || this.getSelectedZone();
+        if (!targetZone || !this.musicAssistant) return;
+        const player = targetZone._raw;
+        if (!player) return;
+
+        // Find all child players joined to this group/leader
+        const children = [];
+        if (Array.isArray(player.group_childs)) {
+            player.group_childs.forEach(id => {
+                if (id !== player.player_id) children.push(id);
+            });
+        }
+        if (Array.isArray(player.group_members)) {
+            player.group_members.forEach(id => {
+                if (id !== player.player_id && !children.includes(id)) children.push(id);
+            });
+        }
+        const allPlayers = Object.values(this.musicAssistant.players || {});
+        allPlayers.forEach(p => {
+            if (p.synced_to === player.player_id && !children.includes(p.player_id)) {
+                children.push(p.player_id);
+            }
+        });
+
+        this.musicAssistant.ungroupPlayer(player.player_id, children).then(() => {
+            return this.musicAssistant.sendCommand('players/all');
+        }).then(freshPlayers => {
+            if (Array.isArray(freshPlayers)) {
+                freshPlayers.forEach(p => {
+                    this.musicAssistant.players[p.player_id] = p;
+                });
+                this.musicAssistant.emitState();
+            }
+        }).catch(err => {
+            console.error('Failed to ungroup zone', err);
+        });
+    }
+
+    transferQueue(targetZone) {
+        const selectedZone = this.getSelectedZone();
+        if (!selectedZone || !targetZone || !this.musicAssistant) return;
+        this.musicAssistant.transferQueue(selectedZone.udn, targetZone.udn, true).then(() => {
+            this.setZone(targetZone);
+        }).catch(err => {
+            console.error('Failed to transfer queue', err);
+        });
+    }
+
     async handleFavouritesSourceChange(source) {
         // Get current settings and update only the favouritesSource
         const currentSettings = await api.getSettings();
@@ -563,6 +667,10 @@ class App extends React.Component {
                                           onFavouritesSourceChange={this.handleFavouritesSourceChange.bind(this)}
                                           setPause={this.setPause.bind(this)}
                                           setNext={this.setNext.bind(this)}
+                                          joinZone={this.joinZone.bind(this)}
+                                          ungroupZone={this.ungroupZone.bind(this)}
+                                          transferQueue={this.transferQueue.bind(this)}
+                                          leavingZoneUdns={this.state.leavingZoneUdns}
                                           playFavourite={this.playFavourite.bind(this)}
                                           musicAssistantUrl={this.state.config?.musicAssistantUrl}
                                           shownShortcuts={this.state.config?.shownShortcuts || { ma: true, spotify: true, apple: false }}
