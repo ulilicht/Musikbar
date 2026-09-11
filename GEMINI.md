@@ -17,8 +17,8 @@ Musikbar is a Mac menubar app to control Music Assistant.
   - Recents: `music/recently_played_items`.
   - Queues: `player_queues/all` (Required for metadata).
 - **Metadata**:
-  - Player state (`active_source`) is often stale.
-  - **Reliable Source**: `queue.current_item` from the corresponding Queue object.
+  - Regular MA playback: `queue.current_item` from the corresponding Queue object is the reliable source.
+  - External / Audio Sources (e.g. Spotify Connect, AirPlay): When an external source is active (`player.active_source !== player.player_id` or `media_type === 'audio_source'`), the player's queue is inactive (`queue.active === false`) and contains stale data from earlier. In that case, `player.current_media` contains the real-time metadata (title, artist, album, image_url).
 
 ## Codebase Map
 

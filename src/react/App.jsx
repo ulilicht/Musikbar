@@ -310,15 +310,18 @@ class App extends React.Component {
     }
     
     extractMetadata(player, queue) {
-        // Check if a plugin source is active (AirPlay, Spotify Connect, etc.)
-        // When a plugin is active, the queue contains stale data from the last MA playback,
-        // but player.current_media has the actual current metadata from the plugin.
-        const isPluginActive = player.active_source && 
-            player.active_source !== player.player_id &&
-            player.current_media?.media_type === 'plugin_source';
+        // Check if an external source / plugin source is active (AirPlay, Spotify Connect, etc.)
+        // When an external source is active, the queue contains stale data from the last MA playback,
+        // but player.current_media has the actual current metadata from the source.
+        const isExternalSourceActive = Boolean(
+            (player.active_source && player.active_source !== player.player_id) ||
+            player.current_media?.media_type === 'audio_source' ||
+            player.current_media?.media_type === 'plugin_source' ||
+            (queue && queue.active === false && (player.state === 'playing' || player.playback_state === 'playing'))
+        );
         
-        // If a plugin is active, prefer player.current_media
-        if (isPluginActive && player.current_media) {
+        // If an external source is active, prefer player.current_media
+        if (isExternalSourceActive && player.current_media) {
             const media = player.current_media;
             return {
                 artist: media.artist || '',
@@ -328,9 +331,10 @@ class App extends React.Component {
         }
         
         // Try Queue Item for regular MA playback
-        if (queue && queue.current_item) {
+        if (queue && queue.active !== false && queue.current_item) {
             const item = queue.current_item;
             const mediaItem = item.media_item;
+            const isRadio = mediaItem?.media_type === 'radio' || item.streamdetails?.media_type === 'radio';
             
             // Artist resolution: item.artist -> item.artists -> mediaItem.artists -> mediaItem.artist
             let artist = '';
@@ -345,12 +349,22 @@ class App extends React.Component {
                     artist = mediaItem.artists.map(a => typeof a === 'string' ? a : (a.name || '')).filter(Boolean).join(', ');
                 }
             }
+            if (!artist && item.streamdetails?.stream_metadata?.artist) {
+                artist = item.streamdetails.stream_metadata.artist;
+            }
             if (!artist && player.current_media?.artist) {
                 artist = player.current_media.artist;
             }
 
-            // Track title resolution
-            const track = (mediaItem && mediaItem.name) || item.name || player.current_media?.title || '';
+            // Track title resolution: for radio, prefer current ICY stream title over station name
+            let track = '';
+            if (isRadio && item.streamdetails?.stream_metadata?.title) {
+                track = item.streamdetails.stream_metadata.title;
+            } else if (isRadio && player.current_media?.title && player.current_media?.media_type === 'radio') {
+                track = player.current_media.title;
+            } else {
+                track = (mediaItem && mediaItem.name) || item.name || player.current_media?.title || '';
+            }
 
             // Image resolution
             let rawImage = '';
@@ -358,6 +372,8 @@ class App extends React.Component {
                 rawImage = typeof item.image === 'string' ? item.image : (item.image.path || '');
             } else if (mediaItem?.metadata?.images?.length > 0) {
                 rawImage = mediaItem.metadata.images[0].path || '';
+            } else if (item.streamdetails?.stream_metadata?.image_url) {
+                rawImage = item.streamdetails.stream_metadata.image_url;
             } else if (player.current_media?.image_url) {
                 rawImage = player.current_media.image_url;
             }
