@@ -142,7 +142,7 @@
     --thumb-size: 26px;
     background:
         linear-gradient(var(--range-fill), var(--range-fill)) 0 0 /
-            calc(var(--range-percent, 0%) + (var(--thumb-size) / 2)) 100% no-repeat,
+            calc(var(--thumb-size) / 2 + (100% - var(--thumb-size)) * var(--range-progress, 0)) 100% no-repeat,
         var(--range-track);
 }
 
