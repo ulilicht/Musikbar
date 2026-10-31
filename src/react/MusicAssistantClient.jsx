@@ -355,9 +355,10 @@ class MusicAssistantClient extends SimpleEventEmitter {
   }
 
   joinPlayer(targetPlayerId, playerToJoinId) {
+    const idsToAdd = Array.isArray(playerToJoinId) ? playerToJoinId : [playerToJoinId];
     return this.sendCommand("players/cmd/set_members", {
       target_player: targetPlayerId,
-      player_ids_to_add: [playerToJoinId],
+      player_ids_to_add: idsToAdd,
     });
   }
 
