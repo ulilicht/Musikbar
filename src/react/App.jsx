@@ -511,12 +511,51 @@ class App extends React.Component {
         const selectedZone = this.getSelectedZone();
         if (!selectedZone || !targetZone || !this.musicAssistant) return;
 
+        const player = targetZone._raw;
+        const playerIdsToJoin = [];
+
+        if (Array.isArray(player?.group_childs)) {
+            player.group_childs.forEach(id => {
+                if (id && !playerIdsToJoin.includes(id)) {
+                    playerIdsToJoin.push(id);
+                }
+            });
+        }
+
+        if (Array.isArray(player?.group_members)) {
+            player.group_members.forEach(id => {
+                if (id && !playerIdsToJoin.includes(id)) {
+                    playerIdsToJoin.push(id);
+                }
+            });
+        }
+
+        const allPlayers = Object.values(this.musicAssistant.players || {});
+        allPlayers.forEach(p => {
+            if (p.synced_to === player?.player_id && !playerIdsToJoin.includes(p.player_id)) {
+                playerIdsToJoin.push(p.player_id);
+            }
+        });
+
+        if (player?.type !== 'group') {
+            if (targetZone.udn && !playerIdsToJoin.includes(targetZone.udn)) {
+                playerIdsToJoin.push(targetZone.udn);
+            }
+        } else if (playerIdsToJoin.length === 0) {
+            if (targetZone.udn) {
+                playerIdsToJoin.push(targetZone.udn);
+            }
+        }
+
+        const playerIds = playerIdsToJoin.filter(id => id && id !== selectedZone.udn);
+        if (playerIds.length === 0) return;
+
         // Trigger leaving animation on the joined target zone immediately
         this.setState(prevState => ({
             leavingZoneUdns: [...prevState.leavingZoneUdns, targetZone.udn]
         }));
 
-        this.musicAssistant.joinPlayer(selectedZone.udn, targetZone.udn).then(() => {
+        this.musicAssistant.joinPlayer(selectedZone.udn, playerIds).then(() => {
             return this.musicAssistant.sendCommand('players/all');
         }).then(freshPlayers => {
             if (Array.isArray(freshPlayers)) {
