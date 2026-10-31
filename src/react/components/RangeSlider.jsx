@@ -29,7 +29,9 @@ const RangeSlider = ({ min = 0, max = 100, value = 0, onChange, onChangeComplete
         emitChange(nextValue);
     };
 
-    const percent = max === min ? 0 : ((internalValue - min) / (max - min)) * 100;
+    const clampedValue = clamp(internalValue, min, max);
+    const progress = max === min ? 0 : (clampedValue - min) / (max - min);
+    const percent = progress * 100;
 
     return (
         <div className="range-slider">
@@ -45,7 +47,8 @@ const RangeSlider = ({ min = 0, max = 100, value = 0, onChange, onChangeComplete
                 onTouchEnd={emitChangeComplete}
                 onPointerUp={emitChangeComplete}
                 style={{
-                    '--range-percent': `${percent}%`
+                    '--range-percent': `${percent}%`,
+                    '--range-progress': progress
                 }}
             />
         </div>
