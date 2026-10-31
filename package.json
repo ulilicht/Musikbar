@@ -25,7 +25,8 @@
     "@tauri-apps/cli": "^2.12.4",
     "@vitejs/plugin-react": "^6.1.2",
     "bumpp": "^12.3.0",
-    "vite": "^8.3.5"
+    "vite": "^8.3.5",
+    "yaml": "^2.7.0"
   },
   "scripts": {
     "dev": "vite",
@@ -33,7 +34,9 @@
     "build": "vite build",
     "preview": "vite preview",
     "tauri": "tauri",
-    "make": "tauri build"
+    "make": "tauri build",
+    "docs:update": "node scripts/update-ma-docs.mjs",
+    "context:lint": "node scripts/okf-lint.mjs"
   },
   "browserslist": {
     "production": [
