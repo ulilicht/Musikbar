@@ -152,7 +152,6 @@ const Zone = (props) => {
     const isOtherZone = !isSelected && Boolean(selectedZone);
 
     const targetPlayer = zone._raw;
-    const targetQueue = zone._queue;
     const selectedPlayer = selectedZone?._raw;
     const selectedQueue = selectedZone?._queue;
 
@@ -182,7 +181,8 @@ const Zone = (props) => {
     );
 
     // Source queue transferability:
-    // When an external source (Spotify Connect, AirPlay, etc.) is active, the queue has no active MA stream to transfer.
+    // When an external source (Spotify Connect, AirPlay, etc.) is active on the source,
+    // the queue has no active MA stream to transfer.
     const selectedIsExternal = Boolean(
         (selectedPlayer?.active_source && selectedPlayer.active_source !== selectedPlayer.player_id) ||
         selectedPlayer?.current_media?.media_type === 'audio_source' ||
@@ -194,12 +194,6 @@ const Zone = (props) => {
         selectedQueue &&
         selectedQueue.active !== false &&
         (selectedQueue.current_item || (typeof selectedQueue.items === 'number' && selectedQueue.items > 0))
-    );
-
-    const targetIsExternal = Boolean(
-        (targetPlayer?.active_source && targetPlayer.active_source !== targetPlayer.player_id) ||
-        targetPlayer?.current_media?.media_type === 'audio_source' ||
-        targetPlayer?.current_media?.media_type === 'plugin_source'
     );
 
     // Show transfer action button on hover:
@@ -214,8 +208,7 @@ const Zone = (props) => {
     const canTransfer = Boolean(
         showTransferAction &&
         !selectedIsExternal &&
-        selectedHasQueue &&
-        !targetIsExternal
+        selectedHasQueue
     );
 
     let transferTitle = `Transfer queue to ${zone.name}`;
@@ -224,8 +217,6 @@ const Zone = (props) => {
             transferTitle = `Cannot transfer queue from ${selectedZone?.name || 'current room'} (external audio source active)`;
         } else if (!selectedHasQueue) {
             transferTitle = `Cannot transfer queue (no active queue)`;
-        } else if (targetIsExternal) {
-            transferTitle = `Cannot transfer queue to ${zone.name} (external audio source active)`;
         }
     }
 
