@@ -45,18 +45,135 @@ class MusicAssistantClient extends SimpleEventEmitter {
     this.isConnected = false;
     this.shouldReconnect = true;
     this.reconnectTimer = null;
+    this.sleepCheckTimer = null;
+    this.lastHeartbeat = Date.now();
+    this.lifecycleListenersAttached = false;
     this.authFailed = false;
     this.connectionId = null;
     this.messageId = 1;
     this.pendingRequests = new Map();
   }
 
+  setupLifecycleListeners() {
+    if (this.lifecycleListenersAttached) return;
+    this.lifecycleListenersAttached = true;
+
+    this.onOnline = () => {
+      console.log("[MusicAssistantClient] Network online event detected. Verifying connection...");
+      this.checkConnectionOrReconnect();
+    };
+
+    this.onVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        this.checkConnectionOrReconnect();
+      }
+    };
+
+    window.addEventListener("online", this.onOnline);
+    document.addEventListener("visibilitychange", this.onVisibilityChange);
+
+    this.lastHeartbeat = Date.now();
+    if (!this.sleepCheckTimer) {
+      this.sleepCheckTimer = setInterval(() => {
+        const now = Date.now();
+        const elapsed = now - this.lastHeartbeat;
+        this.lastHeartbeat = now;
+        // If elapsed time between 2s ticks exceeds 5s, the computer just woke from sleep!
+        if (elapsed > 5000) {
+          console.log(`[MusicAssistantClient] Wake from sleep detected (${elapsed}ms). Reconnecting if needed...`);
+          this.checkConnectionOrReconnect();
+        }
+      }, 2000);
+    }
+  }
+
+  checkConnectionOrReconnect() {
+    if (this.authFailed) return;
+    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
+      console.log("[MusicAssistantClient] Connection inactive, reconnecting...");
+      if (this.reconnectTimer) {
+        clearTimeout(this.reconnectTimer);
+        this.reconnectTimer = null;
+      }
+      this.connect();
+    }
+  }
+
+  disconnect() {
+    this.shouldReconnect = false;
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
+    }
+    if (this.sleepCheckTimer) {
+      clearInterval(this.sleepCheckTimer);
+      this.sleepCheckTimer = null;
+    }
+    if (this.lifecycleListenersAttached) {
+      window.removeEventListener("online", this.onOnline);
+      document.removeEventListener("visibilitychange", this.onVisibilityChange);
+      this.lifecycleListenersAttached = false;
+    }
+    if (this.ws) {
+      try {
+        this.ws.onopen = null;
+        this.ws.onclose = null;
+        this.ws.onerror = null;
+        this.ws.onmessage = null;
+        this.ws.close();
+      } catch (e) {
+        // ignore
+      }
+      this.ws = null;
+    }
+    this.isConnected = false;
+    for (const [id, req] of this.pendingRequests.entries()) {
+      if (req.timeoutId) clearTimeout(req.timeoutId);
+      req.reject(new Error("Client disconnected"));
+    }
+    this.pendingRequests.clear();
+  }
+
   connect() {
+    // Cancel any existing reconnect timer and close existing socket
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
+    }
+    if (this.ws) {
+      try {
+        this.ws.onopen = null;
+        this.ws.onclose = null;
+        this.ws.onerror = null;
+        this.ws.onmessage = null;
+        this.ws.close();
+      } catch (e) {
+        // ignore
+      }
+      this.ws = null;
+    }
+
+    this.shouldReconnect = true;
+    this.authFailed = false;
+    this.setupLifecycleListeners();
+
     // Construct WebSocket URL from HTTP URL (sanitizing trailing slashes)
     const cleanUrl = (this.url || "").replace(/\/+$/, "");
     const wsUrl = cleanUrl.replace(/^http/, "ws") + "/ws";
 
-    this.ws = new WebSocket(wsUrl);
+    try {
+      this.ws = new WebSocket(wsUrl);
+    } catch (e) {
+      console.error("[MusicAssistantClient] Failed to construct WebSocket", e);
+      this.ws = null;
+      this.isConnected = false;
+      this.emit("systemReady", false);
+      if (this.shouldReconnect && !this.authFailed) {
+        this.emitConnectionError("connection", "Unable to reach the server. Check URL/port.", e?.message || "WebSocket error");
+        this.reconnectTimer = setTimeout(() => this.connect(), 4000);
+      }
+      return;
+    }
 
     this.ws.onopen = () => {
       this.isConnected = true;
@@ -76,15 +193,28 @@ class MusicAssistantClient extends SimpleEventEmitter {
       this.isConnected = false;
       this.emit("systemReady", false);
 
+      // Immediately reject pending requests so they do not linger and trigger timeout error screens
+      for (const [id, req] of this.pendingRequests.entries()) {
+        if (req.timeoutId) clearTimeout(req.timeoutId);
+        req.reject(new Error(`WebSocket closed (${event?.reason || "connection lost"})`));
+      }
+      this.pendingRequests.clear();
+
       if (this.shouldReconnect && !this.authFailed) {
-        this.emitConnectionError("connection", "Unable to reach the server. Check URL/port.", event?.reason || "WebSocket closed");
-        // Simple reconnect logic
-        this.reconnectTimer = setTimeout(() => this.connect(), 5000);
+        this.emitConnectionError("connection", "Unable to reach the server. Reconnecting...", event?.reason || "WebSocket closed");
+        if (this.reconnectTimer) clearTimeout(this.reconnectTimer);
+        this.reconnectTimer = setTimeout(() => this.connect(), 4000);
       }
     };
 
     this.ws.onerror = (err) => {
       console.error("MA WebSocket error", err);
+      for (const [id, req] of this.pendingRequests.entries()) {
+        if (req.timeoutId) clearTimeout(req.timeoutId);
+        req.reject(new Error("WebSocket error"));
+      }
+      this.pendingRequests.clear();
+
       if (this.shouldReconnect && !this.authFailed) {
         this.emitConnectionError("connection", "Unable to reach the server. Check URL/port.", err?.message || "WebSocket error");
       }
@@ -172,7 +302,8 @@ class MusicAssistantClient extends SimpleEventEmitter {
     // MA returns message_id as string sometimes, we store as number.
     const msgId = Number(data.message_id);
     if (!isNaN(msgId) && this.pendingRequests.has(msgId)) {
-      const { resolve, reject } = this.pendingRequests.get(msgId);
+      const { resolve, reject, timeoutId } = this.pendingRequests.get(msgId);
+      if (timeoutId) clearTimeout(timeoutId);
       this.pendingRequests.delete(msgId);
 
       // MA error format
@@ -283,7 +414,7 @@ class MusicAssistantClient extends SimpleEventEmitter {
   }
 
   async sendCommand(command, args = {}) {
-    if (!this.isConnected || !this.ws) {
+    if (!this.isConnected || !this.ws || this.ws.readyState !== WebSocket.OPEN) {
       throw new Error('WebSocket not connected');
     }
 
@@ -295,22 +426,22 @@ class MusicAssistantClient extends SimpleEventEmitter {
     };
 
     return new Promise((resolve, reject) => {
-      this.pendingRequests.set(id, { resolve, reject, command });
-
-      try {
-        this.ws.send(JSON.stringify(payload));
-      } catch (e) {
-        this.pendingRequests.delete(id);
-        reject(e);
-      }
-
-      // Timeout safety
-      setTimeout(() => {
+      const timeoutId = setTimeout(() => {
         if (this.pendingRequests.has(id)) {
           this.pendingRequests.delete(id);
           reject(new Error(`Command ${command} timed out`));
         }
       }, 30000);
+
+      this.pendingRequests.set(id, { resolve, reject, command, timeoutId });
+
+      try {
+        this.ws.send(JSON.stringify(payload));
+      } catch (e) {
+        clearTimeout(timeoutId);
+        this.pendingRequests.delete(id);
+        reject(e);
+      }
     });
   }
 

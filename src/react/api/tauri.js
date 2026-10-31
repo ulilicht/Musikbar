@@ -15,8 +15,15 @@ async function getStore() {
 }
 
 export const api = {
-    getSettings: async () => {
+    getSettings: async (forceReload = false) => {
         const store = await getStore();
+        if (forceReload) {
+            try {
+                await store.reload();
+            } catch (e) {
+                console.warn('Failed to reload store from disk', e);
+            }
+        }
         // Replicate logic: read from store, return defaults if missing
         const musicAssistantUrl = await store.get('musicAssistantUrl');
         const musicAssistantToken = await store.get('musicAssistantToken');
@@ -53,7 +60,7 @@ export const api = {
         
         // Emit event so other windows (or this one) can update
         const { emit } = await import('@tauri-apps/api/event');
-        await emit('settings-updated');
+        await emit('settings-updated', settings);
         
         return true;
     },

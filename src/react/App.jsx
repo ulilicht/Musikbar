@@ -5,7 +5,7 @@ import ErrorBoundary from "./ErrorBoundary/ErrorBoundary";
 import Settings from './Settings';
 import MusicAssistantClient from './MusicAssistantClient';
 import { api } from './api/tauri';
-import { Settings as SettingsIcon } from 'react-feather';
+import { Settings as SettingsIcon, RotateCw } from 'react-feather';
 
 class App extends React.Component {
     constructor(props) {
@@ -31,7 +31,9 @@ class App extends React.Component {
         window.addEventListener('hashchange', this.handleHashChange.bind(this));
         
         // Listen for config updates
-        api.onSettingsUpdated(this.loadConfig.bind(this)).then(unlisten => {
+        api.onSettingsUpdated(() => {
+            this.loadConfig(true);
+        }).then(unlisten => {
             this.unlistenSettings = unlisten;
         });
 
@@ -43,6 +45,9 @@ class App extends React.Component {
     componentWillUnmount() {
          window.removeEventListener('hashchange', this.handleHashChange.bind(this));
          if (this.unlistenSettings) this.unlistenSettings();
+         if (this.musicAssistant) {
+             this.musicAssistant.disconnect();
+         }
     }
 
     handleHashChange() {
@@ -53,13 +58,18 @@ class App extends React.Component {
             // Only switch back to main if we have config, otherwise check config again
              if (this.state.view === 'settings') {
                  // Potentially reloading main view
-                 this.loadConfig();
+                 this.loadConfig(true);
              }
         }
     }
 
-    async loadConfig() {
-        const settings = await api.getSettings();
+    retryConnection() {
+        this.setState({ view: 'loading', error: null, isReady: false });
+        this.loadConfig(true);
+    }
+
+    async loadConfig(forceReconnect = false) {
+        const settings = await api.getSettings(forceReconnect);
         this.setState({ config: settings }, () => {
             if (this.state.isReady) {
                 this.loadFavourites();
@@ -70,23 +80,22 @@ class App extends React.Component {
 
         if (settings.musicAssistantUrl && settings.musicAssistantToken) {
             // We have config, initialize MA
-            this.initializeClient(settings.musicAssistantUrl, settings.musicAssistantToken);
+            const shouldForce = forceReconnect || this.state.view === 'error';
+            this.initializeClient(settings.musicAssistantUrl, settings.musicAssistantToken, shouldForce);
         } else {
             this.setState({ view: 'setup_required' });
         }
     }
     
-    initializeClient(url, token) {
+    initializeClient(url, token, forceReconnect = false) {
         if (this.musicAssistant) {
-            // Already initialized, check if we need to reconnect (e.g. url changed)?
-            // For simplicity, for now we assume reload on big config changes or just reconnect if simple
-             if (this.musicAssistant.url !== url || this.musicAssistant.token !== token) {
-                 // Re-init (simple way: just reload window or handle disconnect)
-                 // Let's create new instance
+             const credentialsChanged = this.musicAssistant.url !== url || this.musicAssistant.token !== token;
+             if (forceReconnect || credentialsChanged || !this.musicAssistant.isConnected) {
+                 this.musicAssistant.disconnect();
                  this.musicAssistant.removeAllListeners();
-                 // Close old ws?
+                 this.musicAssistant = null;
              } else {
-                 return; // No change
+                 return; // Already active with same credentials
              }
         }
         
@@ -466,7 +475,11 @@ class App extends React.Component {
 
     setMute() {
         const zone = this.getSelectedZone();
-        if (zone) this.musicAssistant.setMute(zone.udn, !this.state.nowPlaying.isMuted);
+        if (zone && this.musicAssistant) {
+            this.musicAssistant.setMute(zone.udn, !this.state.nowPlaying.isMuted).catch(err => {
+                console.warn('[App] Failed to set mute:', err.message);
+            });
+        }
     }
 
     playFavourite(item) {
@@ -494,17 +507,29 @@ class App extends React.Component {
 
     setVolume(targetVolume) {
         const zone = this.getSelectedZone();
-        if (zone) this.musicAssistant.setVolume(zone.udn, targetVolume);
+        if (zone && this.musicAssistant) {
+            this.musicAssistant.setVolume(zone.udn, targetVolume).catch(err => {
+                console.warn('[App] Failed to set volume:', err.message);
+            });
+        }
     }
 
     setPause() {
         const zone = this.getSelectedZone();
-        if (zone) this.musicAssistant.playPause(zone.udn);
+        if (zone && this.musicAssistant) {
+            this.musicAssistant.playPause(zone.udn).catch(err => {
+                console.warn('[App] Failed to toggle play/pause:', err.message);
+            });
+        }
     }
 
     setNext() {
         const zone = this.getSelectedZone();
-        if (zone) this.musicAssistant.next(zone.udn);
+        if (zone && this.musicAssistant) {
+            this.musicAssistant.next(zone.udn).catch(err => {
+                console.warn('[App] Failed to play next track:', err.message);
+            });
+        }
     }
 
     joinZone(targetZone) {
@@ -677,10 +702,16 @@ class App extends React.Component {
                         {this.state.error?.detail ? (
                             <div className="error-details">{this.state.error.detail}</div>
                         ) : null}
-                        <div className="ma-button-wrapper">
+                        <div className="ma-button-wrapper" style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+                            <button className="ma-button" onClick={() => this.retryConnection()}>
+                                <div className="ma-button-icon">
+                                    <RotateCw size={14} />
+                                </div>
+                                <div className="ma-button-text">Retry Connection</div>
+                            </button>
                             <button className="ma-button" onClick={() => api.openSettings()}>
                                 <div className="ma-button-icon">
-                                    <SettingsIcon />
+                                    <SettingsIcon size={14} />
                                 </div>
                                 <div className="ma-button-text">Open Settings</div>
                             </button>
