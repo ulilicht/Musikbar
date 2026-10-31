@@ -20,6 +20,10 @@ macOS menubar app to control Music Assistant.
 - **Metadata Logic**:
   - Regular MA playback: `queue.current_item` from the corresponding Queue object is the reliable source.
   - External / Audio Sources (e.g. Spotify Connect, AirPlay): When active (`player.active_source !== player.player_id` or `media_type === 'audio_source'`), the player's queue is inactive (`queue.active === false`) with stale data. In that case, `player.current_media` contains the real-time metadata (title, artist, album, image_url).
+- **Player Filtering**:
+  - Only audio player types (`player`, `stereo_pair`, `group`) represent playable zones in Musikbar.
+  - Music Assistant also exposes non-audio devices (e.g. `light` for Hue entertainment zones, `visualizer`, `display`, `source`, `protocol`). These must be filtered out (`p.type && !['player', 'stereo_pair', 'group'].includes(p.type)`).
+  - Also respect player visibility flags: exclude when `p.enabled === false`, `p.hide_in_ui === true`, or `p.hide_player_in_ui` includes `'always'`.
 - **Full API Reference**: See `context/ma-api-docs/music-assistant-api.md` (generated via `npm run docs:update`).
 
 ## Development & Maintenance

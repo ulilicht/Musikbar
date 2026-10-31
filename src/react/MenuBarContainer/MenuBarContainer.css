@@ -275,6 +275,20 @@
     transform: scale(0.95);
 }
 
+.zone-action-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+    background: rgba(0, 0, 0, 0.04);
+    color: rgba(0, 0, 0, 0.35);
+    transform: none;
+}
+
+.zone-action-btn:disabled:hover {
+    background: rgba(0, 0, 0, 0.04);
+    color: rgba(0, 0, 0, 0.35);
+    transform: none;
+}
+
 .zone-action-btn--ungroup:hover {
     background: rgba(229, 57, 53, 0.15);
     color: #e53935;
@@ -536,6 +550,19 @@ button.active svg {
     .zone-action-btn:hover {
         background: rgba(255, 255, 255, 0.22);
         color: #fff;
+    }
+
+    .zone-action-btn:disabled {
+        background: rgba(255, 255, 255, 0.04);
+        color: rgba(255, 255, 255, 0.3);
+        opacity: 0.3;
+        transform: none;
+    }
+
+    .zone-action-btn:disabled:hover {
+        background: rgba(255, 255, 255, 0.04);
+        color: rgba(255, 255, 255, 0.3);
+        transform: none;
     }
 
     .zone-action-btn--ungroup:hover {

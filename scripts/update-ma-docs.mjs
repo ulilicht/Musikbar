@@ -157,6 +157,9 @@ generated:
    - Real-time metadata (title, artist, album, image_url) must be read from \`player.current_media\`.
 3. **Queue Playback**:
    - Always use \`player_queues/play_media\` (with \`queue_id\` and \`media\`), NOT \`players/cmd/play_media\`.
+4. **Player Filtering**:
+   - Only audio player types (\`player\`, \`stereo_pair\`, \`group\`) are shown. Non-audio device types like \`light\` (e.g. Philips Hue entertainment zones), \`visualizer\`, \`display\`, \`source\`, \`protocol\` are filtered out.
+   - Players with \`enabled === false\`, \`hide_in_ui === true\`, or \`hide_player_in_ui\` containing \`always\` are hidden.
 
 ---
 

@@ -13,6 +13,7 @@ class App extends React.Component {
         this.musicAssistant = null; // Will init after config load
         this.didAutoSelectZoneOnFirstLaunch = false;
         this.unlistenSettings = null;
+        this.currentSelectedZoneUdn = '';
         this.state = {
             view: 'loading', // 'loading' | 'main' | 'settings' | 'setup_required' | 'error'
             isReady: false,
@@ -156,7 +157,8 @@ class App extends React.Component {
         } else {
              // If we already have a selection, update its nowPlaying status from the new data
              // We need to re-find the updated player object in the new list
-             const updatedSelectedZone = availableZones.find(z => z.udn === this.state.selectedZoneUdn);
+             const selectedUdn = this.currentSelectedZoneUdn || this.state.selectedZoneUdn;
+             const updatedSelectedZone = availableZones.find(z => z.udn === selectedUdn);
              if (updatedSelectedZone) {
                  this.loadNowPlaying(updatedSelectedZone);
              }
@@ -168,6 +170,10 @@ class App extends React.Component {
             console.error('[App] players is not an array', players);
             return [];
         }
+
+        // Valid player types for music playback in Musikbar
+        // Non-audio entities (e.g. 'light' for Hue entertainment areas, 'visualizer', 'display', 'source', 'protocol') must not appear
+        const AUDIO_PLAYER_TYPES = new Set(['player', 'stereo_pair', 'group']);
 
         // Collect all child player IDs across all sync groups and group players
         const syncedChildIds = new Set();
@@ -189,23 +195,37 @@ class App extends React.Component {
 
         // Map MA Player -> UI Zone
         // UI expects: { name, udn, isZone: ?, isPlaying }
-        // Filter out players based on sync status and visibility settings
+        // Filter out non-audio players, disabled players, and players hidden by visibility settings
         return players.filter(p => {
-             // Synced child/follower players in a group should never be shown separately
-             if (syncedChildIds.has(p.player_id)) {
+             // Exclude disabled players
+             if (p.enabled === false) {
                  return false;
              }
 
-             // Default hidden flags if missing (safety check)
-             const hiddenFlags = p.hide_player_in_ui || [];
+             // Only audio player types can be controlled as playback zones
+             if (p.type && !AUDIO_PLAYER_TYPES.has(p.type)) {
+                 return false;
+             }
 
-             // Check if hidden because unavailable
+             // Check MA server hide_in_ui flag
+             if (p.hide_in_ui === true) {
+                 return false;
+             }
+
+             // Check granular hide_player_in_ui rules
+             const hiddenFlags = p.hide_player_in_ui || [];
+             if (hiddenFlags.includes('always')) {
+                 return false;
+             }
              if (!p.available && hiddenFlags.includes('when_unavailable')) {
                  return false;
              }
-             
-             // Check if hidden because synced
-             if (p.synced_to) {
+             if (p.powered === false && hiddenFlags.includes('when_powered_off')) {
+                 return false;
+             }
+
+             // Synced child/follower players in a group should never be shown separately
+             if (p.synced_to || syncedChildIds.has(p.player_id)) {
                  return false;
              }
              
@@ -216,13 +236,18 @@ class App extends React.Component {
                // console.warn(`[App] No queue found for player ${p.name} (${p.player_id})`);
             }
             
-            // Resolve group member names from player IDs
+            // Resolve group member names from player IDs (only actual audio players count)
             let groupMemberNames = [];
             if (Array.isArray(p.group_childs) && p.group_childs.length > 0) {
-                groupMemberNames = p.group_childs.map(childId => {
-                    const childPlayer = players.find(pl => pl.player_id === childId);
-                    return childPlayer ? childPlayer.name : childId;
-                });
+                groupMemberNames = p.group_childs
+                    .map(childId => players.find(pl => pl.player_id === childId))
+                    .filter(childPlayer => {
+                        if (!childPlayer) return false;
+                        if (childPlayer.type && !AUDIO_PLAYER_TYPES.has(childPlayer.type)) return false;
+                        if (childPlayer.hide_in_ui === true) return false;
+                        return true;
+                    })
+                    .map(childPlayer => childPlayer.name);
             }
             
             // Build display name: for groups, show all member names joined with +
@@ -243,7 +268,8 @@ class App extends React.Component {
     }
     
     getSelectedZone(zones = this.state.availableZones) {
-        return zones.find(zone => zone.udn === this.state.selectedZoneUdn);
+        const currentUdn = this.currentSelectedZoneUdn || this.state.selectedZoneUdn;
+        return zones.find(zone => zone.udn === currentUdn);
     }
     
     resolveImageUrl(imageUrl) {
@@ -363,7 +389,7 @@ class App extends React.Component {
         }
         
         // Try Queue Item for regular MA playback
-        if (queue && queue.active !== false && queue.current_item) {
+        if (queue && (queue.active !== false || !isExternalSourceActive) && queue.current_item) {
             const item = queue.current_item;
             const mediaItem = item.media_item;
             const isRadio = mediaItem?.media_type === 'radio' || item.streamdetails?.media_type === 'radio';
@@ -502,9 +528,17 @@ class App extends React.Component {
     }
 
     setZone(zone) {
-        this.setState({ selectedZoneUdn: zone.udn });
-        localStorage.selectedZoneName = zone.name;
-        this.loadNowPlaying(zone);
+        if (!zone) return;
+        const targetUdn = typeof zone === 'string' ? zone : zone.udn;
+        this.currentSelectedZoneUdn = targetUdn;
+        this.setState({ selectedZoneUdn: targetUdn });
+        const freshestZone = this.state.availableZones.find(z => z.udn === targetUdn) || zone;
+        if (freshestZone && freshestZone.name) {
+            localStorage.selectedZoneName = freshestZone.name;
+        }
+        if (freshestZone) {
+            this.loadNowPlaying(freshestZone);
+        }
     }
 
     setVolume(targetVolume) {
@@ -646,14 +680,113 @@ class App extends React.Component {
         });
     }
 
-    transferQueue(targetZone) {
+    async transferQueue(targetZone) {
         const selectedZone = this.getSelectedZone();
         if (!selectedZone || !targetZone || !this.musicAssistant) return;
-        this.musicAssistant.transferQueue(selectedZone.udn, targetZone.udn, true).then(() => {
-            this.setZone(targetZone);
-        }).catch(err => {
-            console.error('Failed to transfer queue', err);
+
+        const targetUdn = typeof targetZone === 'string' ? targetZone : targetZone.udn;
+        if (selectedZone.udn === targetUdn) return;
+
+        const selectedPlayer = selectedZone._raw;
+        const selectedQueue = selectedZone._queue;
+        const selectedIsExternal = Boolean(
+            (selectedPlayer?.active_source && selectedPlayer.active_source !== selectedPlayer.player_id) ||
+            selectedPlayer?.current_media?.media_type === 'audio_source' ||
+            selectedPlayer?.current_media?.media_type === 'plugin_source' ||
+            (selectedQueue && selectedQueue.active === false && (selectedPlayer?.state === 'playing' || selectedPlayer?.playback_state === 'playing'))
+        );
+        const selectedHasQueue = Boolean(
+            selectedQueue &&
+            selectedQueue.active !== false &&
+            (selectedQueue.current_item || (typeof selectedQueue.items === 'number' && selectedQueue.items > 0))
+        );
+        if (selectedIsExternal || !selectedHasQueue) {
+            console.warn('[App] Cannot transfer queue: source has external audio source active or no active queue');
+            return;
+        }
+
+        const targetName = targetZone.name || (this.state.availableZones.find(z => z.udn === targetUdn)?.name);
+
+        // Optimistically select the target device and indicate loading
+        this.currentSelectedZoneUdn = targetUdn;
+        this.setState({
+            selectedZoneUdn: targetUdn,
+            nowPlaying: {
+                ...this.state.nowPlaying,
+                isLoading: true
+            }
         });
+        if (targetName) {
+            localStorage.selectedZoneName = targetName;
+        }
+
+        try {
+            await this.musicAssistant.transferQueue(selectedZone.udn, targetUdn, true);
+
+            // Fetch fresh players and queues to guarantee up-to-date state
+            const [freshPlayers, freshQueues] = await Promise.all([
+                this.musicAssistant.sendCommand('players/all'),
+                this.musicAssistant.fetchQueues()
+            ]);
+
+            if (Array.isArray(freshPlayers)) {
+                freshPlayers.forEach(p => {
+                    this.musicAssistant.players[p.player_id] = p;
+                });
+            }
+            if (Array.isArray(freshQueues)) {
+                freshQueues.forEach(q => {
+                    this.musicAssistant.queues[q.queue_id] = q;
+                });
+            }
+
+            const updatedZones = this.mapPlayersToZones(
+                Object.values(this.musicAssistant.players),
+                Object.values(this.musicAssistant.queues)
+            );
+
+            this.setState({ availableZones: updatedZones, selectedZoneUdn: targetUdn });
+
+            const updatedTargetZone = updatedZones.find(z => z.udn === targetUdn);
+            if (updatedTargetZone) {
+                this.loadNowPlaying(updatedTargetZone);
+            }
+
+            this.musicAssistant.emitState();
+
+            // Follow-up refresh to handle any delayed player state transitions
+            setTimeout(async () => {
+                if ((this.currentSelectedZoneUdn || this.state.selectedZoneUdn) === targetUdn) {
+                    try {
+                        const [laterPlayers, laterQueues] = await Promise.all([
+                            this.musicAssistant.sendCommand('players/all'),
+                            this.musicAssistant.fetchQueues()
+                        ]);
+                        if (Array.isArray(laterPlayers)) {
+                            laterPlayers.forEach(p => {
+                                this.musicAssistant.players[p.player_id] = p;
+                            });
+                        }
+                        if (Array.isArray(laterQueues)) {
+                            laterQueues.forEach(q => {
+                                this.musicAssistant.queues[q.queue_id] = q;
+                            });
+                        }
+                        this.musicAssistant.emitState();
+                    } catch (e) {
+                        // ignore
+                    }
+                }
+            }, 1000);
+        } catch (err) {
+            console.error('Failed to transfer queue', err);
+            this.setState(prevState => ({
+                nowPlaying: {
+                    ...prevState.nowPlaying,
+                    isLoading: false
+                }
+            }));
+        }
     }
 
     async handleFavouritesSourceChange(source) {
