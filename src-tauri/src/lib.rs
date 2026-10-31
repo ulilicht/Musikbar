@@ -133,7 +133,7 @@ pub fn run() {
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_store::Builder::default().build())
-        .plugin(tauri_plugin_autostart::init(MacosLauncher::LaunchAgent, Some(vec![])))
+        .plugin(tauri_plugin_autostart::init(MacosLauncher::AppleScript, Some(vec![])))
         .plugin(tauri_plugin_positioner::init())
         .setup(|app| {
             let win = app.get_webview_window("main").unwrap();
@@ -224,11 +224,17 @@ pub fn run() {
         })
         .on_window_event(|window, event| {
             if let WindowEvent::Focused(false) = event {
-                // Hide main window on focus lost (skip in dev mode to allow devtools inspection)
+                // Hide main window on focus lost
                 if window.label() == "main" {
-                    if !tauri::is_dev() {
-                        let _ = window.hide();
+                    #[cfg(debug_assertions)]
+                    {
+                        if let Some(webview) = window.app_handle().get_webview_window(window.label()) {
+                            if webview.is_devtools_open() {
+                                return;
+                            }
+                        }
                     }
+                    let _ = window.hide();
                 }
             }
         })

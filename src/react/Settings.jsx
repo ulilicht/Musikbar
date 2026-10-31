@@ -25,18 +25,40 @@ const Settings = () => {
         api.getAppVersion().then(v => setAppVersion(v));
     }, []);
 
+    const handleAutostartChange = async (e) => {
+        const nextVal = e.target.checked;
+        setAutostart(nextVal);
+        setStatus('Updating autostart...');
+        try {
+            await api.saveSettings({ autostart: nextVal });
+            setStatus(nextVal ? 'Autostart enabled!' : 'Autostart disabled!');
+            setTimeout(() => setStatus(''), 2500);
+        } catch (err) {
+            console.error('Failed to change autostart:', err);
+            setAutostart(!nextVal);
+            setStatus(`Autostart error: ${err?.message || err}`);
+            setTimeout(() => setStatus(''), 5000);
+        }
+    };
+
     const handleSave = async () => {
         setStatus('Saving...');
-        await api.saveSettings({
-            musicAssistantUrl: serverUrl,
-            musicAssistantToken: token,
-            favouritesSource: favouritesSource,
+        try {
+            await api.saveSettings({
+                musicAssistantUrl: serverUrl,
+                musicAssistantToken: token,
+                favouritesSource: favouritesSource,
 
-            autostart: autostart,
-            shownShortcuts: shownShortcuts
-        });
-        setStatus('Saved!');
-        setTimeout(() => setStatus(''), 2000);
+                autostart: autostart,
+                shownShortcuts: shownShortcuts
+            });
+            setStatus('Saved!');
+            setTimeout(() => setStatus(''), 2000);
+        } catch (err) {
+            console.error('Save failed:', err);
+            setStatus(`Save error: ${err?.message || err}`);
+            setTimeout(() => setStatus(''), 5000);
+        }
     };
 
     return (
@@ -80,7 +102,7 @@ const Settings = () => {
                         <input 
                             type="checkbox" 
                             checked={autostart} 
-                            onChange={(e) => setAutostart(e.target.checked)} 
+                            onChange={handleAutostartChange} 
                         />
                     </div>
                 </div>

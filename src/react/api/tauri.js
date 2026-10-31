@@ -48,11 +48,16 @@ export const api = {
         if (settings.shownShortcuts !== undefined) await store.set('shownShortcuts', settings.shownShortcuts);
         
         if (settings.autostart !== undefined) {
-            const current = await isEnabled();
-            if (settings.autostart && !current) {
-                await enable();
-            } else if (!settings.autostart && current) {
-                await disable();
+            try {
+                const current = await isEnabled();
+                if (settings.autostart && !current) {
+                    await enable();
+                } else if (!settings.autostart && current) {
+                    await disable();
+                }
+            } catch (err) {
+                console.error('[api.saveSettings] Failed to set autostart:', err);
+                throw err;
             }
         }
 
