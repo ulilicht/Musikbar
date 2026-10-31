@@ -361,25 +361,32 @@ class MusicAssistantClient extends SimpleEventEmitter {
   handleEvent(data) {
     const { event, data: eventData } = data;
 
-    if (event === 'player_added') {
-      this.players[eventData.player_id] = eventData;
+    const playerId = eventData?.player_id || data.object_id;
+    if (event === 'player_added' && playerId) {
+      this.players[playerId] = {
+        ...(this.players[playerId] || {}),
+        ...(eventData || {})
+      };
       // Fetch queues again to ensure we have the queue for this new player
       this.fetchQueues().then(() => this.emitState());
-    } else if (event === 'player_updated') {
-      this.players[eventData.player_id] = {
-        ...this.players[eventData.player_id],
-        ...eventData
+    } else if (event === 'player_updated' && playerId) {
+      this.players[playerId] = {
+        ...(this.players[playerId] || {}),
+        ...(eventData || {})
       };
       this.emitState();
-    } else if (event === 'player_removed') {
-      delete this.players[eventData.player_id];
+    } else if (event === 'player_removed' && playerId) {
+      delete this.players[playerId];
       this.emitState();
-    } else if (event === 'queue_updated') {
-      this.queues[eventData.queue_id] = {
-        ...this.queues[eventData.queue_id],
-        ...eventData
-      };
-      this.emitState();
+    } else if (event === 'queue_updated' || event === 'queue_items_updated' || event === 'queue_added') {
+      const queueId = eventData?.queue_id || data.object_id;
+      if (queueId) {
+        this.queues[queueId] = {
+          ...(this.queues[queueId] || {}),
+          ...(eventData || {})
+        };
+        this.emitState();
+      }
     }
   }
 
