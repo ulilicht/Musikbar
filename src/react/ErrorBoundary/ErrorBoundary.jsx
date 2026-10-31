@@ -21,10 +21,24 @@ class ErrorBoundary extends React.Component {
         }
 
         const onUnhandledRejectionHandler = (promiseRejectionEvent) => {
+            const reason = promiseRejectionEvent?.reason;
+            const message = reason?.message || String(reason || '');
+            // Ignore transient network/websocket errors that are handled by the connection manager
+            if (
+                message.includes('WebSocket') ||
+                message.includes('timed out') ||
+                message.includes('Connection closed') ||
+                message.includes('Network') ||
+                message.includes('Failed to fetch')
+            ) {
+                console.warn('[ErrorBoundary] Suppressed unhandled network rejection:', message);
+                return;
+            }
+
             this.setState({
                 hasError: true,
-                error: promiseRejectionEvent.reason.message,
-                errorInfo: promiseRejectionEvent.reason.stack
+                error: message,
+                errorInfo: reason?.stack || ''
             });
         }
 
