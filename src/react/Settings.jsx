@@ -357,7 +357,7 @@ const Settings = () => {
                     <div className="settings-group">
                         <div className="settings-row">
                             <span className="settings-label">Musikbar</span>
-                            <span className="settings-version-badge">v{appVersion || '2.2.1'}</span>
+                            <span className="settings-version-badge">v{appVersion || '2.2.2'}</span>
                         </div>
                         <div className="settings-row clickable" onClick={() => api.openExternal('https://github.com/ulilicht/Musikbar/issues/new')}>
                             <span className="settings-label">Report an Issue</span>
