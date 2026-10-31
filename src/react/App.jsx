@@ -687,6 +687,24 @@ class App extends React.Component {
         const targetUdn = typeof targetZone === 'string' ? targetZone : targetZone.udn;
         if (selectedZone.udn === targetUdn) return;
 
+        const selectedPlayer = selectedZone._raw;
+        const selectedQueue = selectedZone._queue;
+        const selectedIsExternal = Boolean(
+            (selectedPlayer?.active_source && selectedPlayer.active_source !== selectedPlayer.player_id) ||
+            selectedPlayer?.current_media?.media_type === 'audio_source' ||
+            selectedPlayer?.current_media?.media_type === 'plugin_source' ||
+            (selectedQueue && selectedQueue.active === false && (selectedPlayer?.state === 'playing' || selectedPlayer?.playback_state === 'playing'))
+        );
+        const selectedHasQueue = Boolean(
+            selectedQueue &&
+            selectedQueue.active !== false &&
+            (selectedQueue.current_item || (typeof selectedQueue.items === 'number' && selectedQueue.items > 0))
+        );
+        if (selectedIsExternal || !selectedHasQueue) {
+            console.warn('[App] Cannot transfer queue: source has external audio source active or no active queue');
+            return;
+        }
+
         const targetName = targetZone.name || (this.state.availableZones.find(z => z.udn === targetUdn)?.name);
 
         // Optimistically select the target device and indicate loading

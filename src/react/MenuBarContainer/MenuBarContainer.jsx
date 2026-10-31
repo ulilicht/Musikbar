@@ -152,7 +152,9 @@ const Zone = (props) => {
     const isOtherZone = !isSelected && Boolean(selectedZone);
 
     const targetPlayer = zone._raw;
+    const targetQueue = zone._queue;
     const selectedPlayer = selectedZone?._raw;
+    const selectedQueue = selectedZone?._queue;
 
     // Check if already joined/synced together
     const isAlreadyJoined = Boolean(
@@ -179,20 +181,59 @@ const Zone = (props) => {
         )
     );
 
-    // Can Transfer Queue:
-    // Available, not already joined
-    const canTransfer = Boolean(
+    // Source queue transferability:
+    // When an external source (Spotify Connect, AirPlay, etc.) is active, the queue has no active MA stream to transfer.
+    const selectedIsExternal = Boolean(
+        (selectedPlayer?.active_source && selectedPlayer.active_source !== selectedPlayer.player_id) ||
+        selectedPlayer?.current_media?.media_type === 'audio_source' ||
+        selectedPlayer?.current_media?.media_type === 'plugin_source' ||
+        (selectedQueue && selectedQueue.active === false && (selectedPlayer?.state === 'playing' || selectedPlayer?.playback_state === 'playing'))
+    );
+
+    const selectedHasQueue = Boolean(
+        selectedQueue &&
+        selectedQueue.active !== false &&
+        (selectedQueue.current_item || (typeof selectedQueue.items === 'number' && selectedQueue.items > 0))
+    );
+
+    const targetIsExternal = Boolean(
+        (targetPlayer?.active_source && targetPlayer.active_source !== targetPlayer.player_id) ||
+        targetPlayer?.current_media?.media_type === 'audio_source' ||
+        targetPlayer?.current_media?.media_type === 'plugin_source'
+    );
+
+    // Show transfer action button on hover:
+    const showTransferAction = Boolean(
         isPlaying &&
         isOtherZone &&
         targetPlayer?.available &&
         !isAlreadyJoined
     );
 
+    // Can transfer queue right now:
+    const canTransfer = Boolean(
+        showTransferAction &&
+        !selectedIsExternal &&
+        selectedHasQueue &&
+        !targetIsExternal
+    );
+
+    let transferTitle = `Transfer queue to ${zone.name}`;
+    if (showTransferAction && !canTransfer) {
+        if (selectedIsExternal) {
+            transferTitle = `Cannot transfer queue from ${selectedZone?.name || 'current room'} (external audio source active)`;
+        } else if (!selectedHasQueue) {
+            transferTitle = `Cannot transfer queue (no active queue)`;
+        } else if (targetIsExternal) {
+            transferTitle = `Cannot transfer queue to ${zone.name} (external audio source active)`;
+        }
+    }
+
     // Can Ungroup:
     // This zone is an active group (has joined members)
     const canUngroup = Boolean(zone.isGroup);
 
-    const hasActions = canJoin || canTransfer || canUngroup;
+    const hasActions = canJoin || showTransferAction || canUngroup;
 
     return (
         <div 
@@ -233,14 +274,17 @@ const Zone = (props) => {
                             <Link size={13} />
                         </button>
                     )}
-                    {canTransfer && (
+                    {showTransferAction && (
                         <button 
                             type="button" 
                             className="zone-action-btn"
-                            title={`Transfer queue to ${zone.name}`}
+                            disabled={!canTransfer}
+                            title={transferTitle}
                             onClick={(e) => {
                                 e.stopPropagation();
-                                transferQueue && transferQueue(zone);
+                                if (canTransfer && transferQueue) {
+                                    transferQueue(zone);
+                                }
                             }}
                         >
                             <ArrowRightCircle size={13} />
