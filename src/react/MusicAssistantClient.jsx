@@ -22,6 +22,15 @@ class SimpleEventEmitter {
     return this;
   }
 
+  removeAllListeners(event) {
+    if (event) {
+      this.listeners.delete(event);
+    } else {
+      this.listeners.clear();
+    }
+    return this;
+  }
+
   emit(event, ...args) {
     if (!this.listeners.has(event)) {
       return false;

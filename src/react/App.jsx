@@ -92,7 +92,9 @@ class App extends React.Component {
              const credentialsChanged = this.musicAssistant.url !== url || this.musicAssistant.token !== token;
              if (forceReconnect || credentialsChanged || !this.musicAssistant.isConnected) {
                  this.musicAssistant.disconnect();
-                 this.musicAssistant.removeAllListeners();
+                 if (typeof this.musicAssistant.removeAllListeners === 'function') {
+                     this.musicAssistant.removeAllListeners();
+                 }
                  this.musicAssistant = null;
              } else {
                  return; // Already active with same credentials
