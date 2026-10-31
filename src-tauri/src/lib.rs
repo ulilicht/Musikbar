@@ -5,16 +5,45 @@ use tauri::{
     Manager, WebviewWindow, WindowEvent,
 };
 use tauri_plugin_autostart::MacosLauncher;
-use window_vibrancy::{apply_vibrancy, NSVisualEffectMaterial, NSVisualEffectState};
+#[cfg(target_os = "macos")]
+use window_vibrancy::{
+    apply_liquid_glass, apply_vibrancy, LiquidGlassOptions, NSVisualEffectMaterial,
+    NSVisualEffectState,
+};
 
 #[cfg(target_os = "macos")]
 fn apply_window_effects(window: &WebviewWindow) {
-    let _ = apply_vibrancy(
+    let glass_res = apply_liquid_glass(
         window,
-        NSVisualEffectMaterial::HudWindow,
-        Some(NSVisualEffectState::Active),
-        Some(10.0),
+        LiquidGlassOptions::default().radius(14.0).interactive(true),
     );
+    if glass_res.is_err() {
+        let _ = apply_vibrancy(
+            window,
+            NSVisualEffectMaterial::Popover,
+            Some(NSVisualEffectState::Active),
+            Some(14.0),
+        );
+    }
+
+    // Ensure the window's content view layer masks all subviews to corner radius 14
+    // so no square corners or sharp window frames can poke out
+    if let Ok(ns_win) = window.ns_window() {
+        unsafe {
+            use objc2::msg_send;
+            let ns_win: *mut objc2::runtime::AnyObject = ns_win as _;
+            let content_view: *mut objc2::runtime::AnyObject = msg_send![ns_win, contentView];
+            if !content_view.is_null() {
+                let _: () = msg_send![content_view, setWantsLayer: true];
+                let layer: *mut objc2::runtime::AnyObject = msg_send![content_view, layer];
+                if !layer.is_null() {
+                    let _: () = msg_send![layer, setCornerRadius: 14.0f64];
+                    let _: () = msg_send![layer, setMasksToBounds: true];
+                }
+            }
+            let _: () = msg_send![ns_win, invalidateShadow];
+        }
+    }
 }
 
 #[tauri::command]
@@ -23,16 +52,24 @@ async fn open_settings(app: tauri::AppHandle) {
         let _ = window.show();
         let _ = window.set_focus();
     } else {
-        let _ = tauri::WebviewWindowBuilder::new(
+        let builder = tauri::WebviewWindowBuilder::new(
             &app,
             "settings",
             tauri::WebviewUrl::App("index.html#settings".into()),
         )
-        .title("Settings")
-        .inner_size(600.0, 500.0)
+        .title("Musikbar Settings")
+        .inner_size(560.0, 580.0)
+        .center()
         .resizable(false)
-        .visible(true)
-        .build();
+        .maximizable(false)
+        .visible(true);
+
+        #[cfg(target_os = "macos")]
+        let builder = builder
+            .title_bar_style(tauri::TitleBarStyle::Overlay)
+            .hidden_title(true);
+
+        let _ = builder.build();
     }
 }
 

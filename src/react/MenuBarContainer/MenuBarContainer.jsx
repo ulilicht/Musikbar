@@ -54,10 +54,11 @@ class VolumeSlider extends React.Component {
     }
 
     onWheel(event) {
-        if (event.deltaX !== 0) {
-            const scrollIncrement = Math.sign(event.deltaX) * 0.3;
-            this.setVolumeValueInternal(this.state.volumeValueInternal - scrollIncrement);
-
+        // Only react to intentional horizontal scroll (swipe left/right) and ignore vertical scrolling
+        if (Math.abs(event.deltaX) > Math.abs(event.deltaY) && Math.abs(event.deltaX) > 1) {
+            const scrollIncrement = Math.sign(event.deltaX) * 0.5;
+            const newVolume = Math.min(100, Math.max(0, this.state.volumeValueInternal - scrollIncrement));
+            this.setVolumeValueInternal(newVolume);
 
             // when adjusting the volume with mousewheel, send the change only every 1 second to outside.
             if (this.mouseWheelEventInProgress === false) {
