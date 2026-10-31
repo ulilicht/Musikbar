@@ -12,6 +12,8 @@
     "autostart:allow-enable",
     "autostart:allow-disable",
     "autostart:allow-is-enabled",
-    "positioner:default"
+    "positioner:default",
+    "core:window:default",
+    "core:window:allow-start-dragging"
   ]
 }

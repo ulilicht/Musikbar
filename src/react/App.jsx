@@ -33,7 +33,7 @@ class App extends React.Component {
         
         // Listen for config updates
         api.onSettingsUpdated(() => {
-            this.loadConfig(true);
+            this.loadConfig(false, true);
         }).then(unlisten => {
             this.unlistenSettings = unlisten;
         });
@@ -59,20 +59,26 @@ class App extends React.Component {
             // Only switch back to main if we have config, otherwise check config again
              if (this.state.view === 'settings') {
                  // Potentially reloading main view
-                 this.loadConfig(true);
+                 this.loadConfig(false, true);
              }
         }
     }
 
     retryConnection() {
         this.setState({ view: 'loading', error: null, isReady: false });
-        this.loadConfig(true);
+        this.loadConfig(true, true);
     }
 
-    async loadConfig(forceReconnect = false) {
-        const settings = await api.getSettings(forceReconnect);
+    async loadConfig(forceReconnect = false, forceReloadStore = false) {
+        const settings = await api.getSettings(forceReloadStore);
+        const oldConfig = this.state.config;
+        const credentialsChanged = !oldConfig || 
+            oldConfig.musicAssistantUrl !== settings.musicAssistantUrl || 
+            oldConfig.musicAssistantToken !== settings.musicAssistantToken;
+        const sourceChanged = !oldConfig || oldConfig.favouritesSource !== settings.favouritesSource;
+
         this.setState({ config: settings }, () => {
-            if (this.state.isReady) {
+            if (this.state.isReady && sourceChanged) {
                 this.loadFavourites();
             }
         });
@@ -80,8 +86,8 @@ class App extends React.Component {
         if (this.state.view === 'settings') return;
 
         if (settings.musicAssistantUrl && settings.musicAssistantToken) {
-            // We have config, initialize MA
-            const shouldForce = forceReconnect || this.state.view === 'error';
+            // We have config, initialize MA only if credentials changed, explicitly forced, or in error state
+            const shouldForce = forceReconnect || credentialsChanged || this.state.view === 'error';
             this.initializeClient(settings.musicAssistantUrl, settings.musicAssistantToken, shouldForce);
         } else {
             this.setState({ view: 'setup_required' });
@@ -790,17 +796,20 @@ class App extends React.Component {
     }
 
     async handleFavouritesSourceChange(source) {
-        // Get current settings and update only the favouritesSource
-        const currentSettings = await api.getSettings();
-        await api.saveSettings({
-            ...currentSettings,
-            favouritesSource: source
-        });
-        // Update local config and reload favourites
+        if (this.state.config?.favouritesSource === source) return;
+
+        // Optimistically update local config and reload favourites immediately
         this.setState({
             config: { ...this.state.config, favouritesSource: source }
         }, () => {
             this.loadFavourites();
+        });
+
+        // Persist setting to store without restarting connection
+        const currentSettings = await api.getSettings();
+        await api.saveSettings({
+            ...currentSettings,
+            favouritesSource: source
         });
     }
 

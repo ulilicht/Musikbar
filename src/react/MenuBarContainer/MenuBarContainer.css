@@ -73,6 +73,13 @@
 
 .currently-playing-controls button {
     background-color: transparent;
+    border: none;
+    outline: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
 }
 
 .currently-playing-controls button svg {
@@ -102,14 +109,27 @@
 
 .volume-slider-inner .icon {
     background-color: #fff;
+    border: none;
+    outline: none;
+    width: 26px;
+    min-width: 26px;
     height: 26px;
+    flex-shrink: 0;
+    padding: 0;
     padding-top: 1px;
     border-radius: 50px 0 0 50px;
     color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-sizing: border-box;
 }
 
 .volume-slider-inner svg {
     width: 15px;
+    height: 15px;
+    display: block;
 }
 
 .volume-slider-inner input {
@@ -440,7 +460,8 @@
     box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
 }
 
-button {
+.zone button,
+.zone-action-btn {
     background-color: rgba(0, 0, 0, 0.08);
     border: none;
     border-radius: 400px;
@@ -454,16 +475,17 @@ button {
     transition: 0.2s;
 }
 
-button svg {
+.zone button svg,
+.zone-action-btn svg {
     width: 13px;
     color: black;
 }
 
-button.active {
+.zone button.active {
     background-color: #027aff;
 }
 
-button.active svg {
+.zone button.active svg {
     color: white;
 }
 
@@ -610,11 +632,13 @@ button.active svg {
         box-shadow: 0 0 5px rgba(0, 0, 0, 0.35);
     }
 
-    button {
+    .zone button,
+    .zone-action-btn {
         background-color: rgba(255, 255, 255, 0.12);
     }
 
-    button svg {
+    .zone button svg,
+    .zone-action-btn svg {
         color: #f5f5f5;
     }
 
